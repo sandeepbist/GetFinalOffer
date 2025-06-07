@@ -1,4 +1,4 @@
-import { ApiResponse } from "./api-local-adapter";
+import { ApiResponse } from "./api-types";
 
 export class ApiError extends Error {
   constructor(
@@ -17,13 +17,11 @@ export const handleApiError = (error: any): never => {
     throw error;
   }
 
-  // Handle network errors
   if (error.message === "Failed to fetch") {
     throw new ApiError("Network error", 500);
   }
 
   try {
-    // Try to parse error from ApiLocalAdapter
     const errorData = JSON.parse(error.message);
     throw new ApiError(
       errorData.statusText || "An error occurred",
@@ -32,7 +30,6 @@ export const handleApiError = (error: any): never => {
       errorData.details
     );
   } catch (parseError) {
-    // If parsing fails, throw generic error
     throw new ApiError(error.message || "An unexpected error occurred", 500);
   }
 };

@@ -31,7 +31,7 @@ interface Candidate {
   name: string;
   title: string;
   location: string;
-  yearsOfExperience: number;
+  yearsExperience: number;
   skills: string[];
   companyCleared: string;
 }
@@ -46,7 +46,7 @@ export default function CandidateSearch() {
       name: "Michael Chen",
       title: "Senior Frontend Developer",
       location: "San Francisco, CA",
-      yearsOfExperience: 8,
+      yearsExperience: 8,
       skills: ["React", "TypeScript", "Node.js", "GraphQL"],
       companyCleared: "Meta",
     },
@@ -55,7 +55,7 @@ export default function CandidateSearch() {
       name: "Jessica Williams",
       title: "Product Manager",
       location: "New York, NY",
-      yearsOfExperience: 6,
+      yearsExperience: 6,
       skills: ["Product Strategy", "User Research", "Roadmapping", "Agile"],
       companyCleared: "Amazon",
     },
@@ -64,7 +64,7 @@ export default function CandidateSearch() {
       name: "David Johnson",
       title: "UX Designer",
       location: "Remote",
-      yearsOfExperience: 5,
+      yearsExperience: 5,
       skills: ["Figma", "Sketch", "User Flows"],
       companyCleared: "Microsoft",
     },
@@ -81,7 +81,7 @@ export default function CandidateSearch() {
       )
     )
       return false;
-    if (yearsFilter !== null && c.yearsOfExperience < yearsFilter) return false;
+    if (yearsFilter !== null && c.yearsExperience < yearsFilter) return false;
     if (companyFilter && c.companyCleared !== companyFilter) return false;
     return true;
   });
@@ -201,7 +201,7 @@ export default function CandidateSearch() {
                     </div>
                     <p className="text-sm text-gray-600">{c.title}</p>
                     <p className="text-sm text-gray-600">
-                      {c.location} • {c.yearsOfExperience} years
+                      {c.location} • {c.yearsExperience} years
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {c.skills.map((skill) => (

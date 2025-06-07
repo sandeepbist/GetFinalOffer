@@ -20,7 +20,7 @@ export const CandidateRepository = (
     body.append("userId", dto.userId);
     body.append("professionalTitle", dto.professionalTitle);
     body.append("currentRole", dto.currentRole);
-    body.append("yearsExperience", String(dto.yearsOfExperience));
+    body.append("yearsExperience", String(dto.yearsExperience));
     body.append("location", dto.location);
     body.append("bio", dto.bio);
     body.append("skillIds", JSON.stringify(dto.skillIds));

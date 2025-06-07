@@ -1,9 +1,13 @@
+import { VerificationStatus } from "./dashboard/components/VerifyCallout";
+
 export interface InterviewProgressEntryDTO {
-  companyId: number;
+  id: string;
+  companyId: string;
   position: string;
   roundsCleared: number;
   totalRounds: number;
   status: string;
+  verificationStatus: VerificationStatus;
   dateCleared: string;
 }
 
@@ -11,10 +15,11 @@ export interface CreateCandidateProfileDTO {
   userId: string;
   professionalTitle: string;
   currentRole: string;
-  yearsOfExperience: number;
+  yearsExperience: number;
   location: string;
   bio: string;
-  skillIds: number[];
+  verificationStatus: VerificationStatus;
+  skillIds: string[];
   interviewProgress: InterviewProgressEntryDTO[];
   resumeFile: File;
 }
@@ -22,6 +27,29 @@ export interface CreateCandidateProfileDTO {
 export interface CreateCandidateProfileResponseDTO {
   success: true;
 }
+
 export interface CreateCandidateResponse {
   success: true;
 }
+
+export interface CandidateProfileSummaryDTO {
+  userId: string;
+  professionalTitle: string;
+  currentRole: string;
+  yearsExperience: number;
+  location: string;
+  bio: string;
+  resumeUrl: string;
+  skillIds: string[];
+  interviewProgress: InterviewProgressEntryDTO[];
+  verificationStatus: VerificationStatus;
+}
+
+export type UpdateCandidateProfileDTO = {
+  professionalTitle: string;
+  currentRole: string;
+  yearsExperience: number;
+  location: string;
+  bio: string;
+  skillIds: string[];
+};

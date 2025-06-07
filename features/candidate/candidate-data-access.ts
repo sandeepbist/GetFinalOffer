@@ -16,7 +16,7 @@ export async function insertCandidate(data: {
   userId: string;
   professionalTitle: string;
   currentRole: string;
-  yearsOfExperience: number;
+  yearsExperience: number;
   location: string;
   bio: string;
   resumeUrl: string;
@@ -27,7 +27,7 @@ export async function insertCandidate(data: {
       userId: data.userId,
       professionalTitle: data.professionalTitle,
       currentRole: data.currentRole,
-      yearsExperience: data.yearsOfExperience,
+      yearsExperience: data.yearsExperience,
       location: data.location,
       bio: data.bio,
       resumeUrl: data.resumeUrl,

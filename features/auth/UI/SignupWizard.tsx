@@ -1,7 +1,6 @@
 "use client";
 
 import React, { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,6 @@ import { BasicInfoStep } from "@/features/auth/Candidate/BasicInfoStep";
 import { signUp } from "@/lib/auth/auth-client";
 
 export const SignupWizard: React.FC = () => {
-  const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,7 +32,6 @@ export const SignupWizard: React.FC = () => {
     }
 
     toast.success("Check your email to complete signup");
-    router.push("/dashboard");
   };
 
   return (

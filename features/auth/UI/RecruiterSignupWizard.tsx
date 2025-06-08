@@ -1,59 +1,47 @@
 "use client";
 
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
+import React, { useEffect } from "react";
+import { useForm, FormProvider } from "react-hook-form";
 import { toast } from "sonner";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
-import { Form } from "@/components/ui/form";
-
-import { StepIndicator } from "@/features/auth/Recruiter/components/StepIndicator";
-import { RecruiterBasicStep } from "@/features/auth/Recruiter/RecruiterBasicStep";
-import { RecruiterCompanyStep } from "@/features/auth/Recruiter/RecruiterCompanyStep";
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { useRouter } from "next/navigation";
+import { getAllPartnerOrganisations } from "@/features/organisation/partner-organisations-use-cases";
+import { registerRecruiter } from "@/features/recruiter/recruiter-use-cases";
+import { signUp } from "@/lib/auth/auth-client";
+import { PartnerOrganisationDTO } from "@/features/organisation/partner-organisations-dto";
 
 interface RecruiterFormValues {
   fullName: string;
+  organisationId: string;
   email: string;
   password: string;
   confirmPassword: string;
-  companyName: string;
-  companyWebsite: string;
-  companySize: string;
-  companyDescription?: string;
 }
 
-function getDomainFromUrl(url: string): string | null {
-  try {
-    if (!url.startsWith("http")) {
-      url = "https://" + url;
-    }
-    const { hostname } = new URL(url);
-    return hostname.replace(/^www\./, "").toLowerCase();
-  } catch {
-    return null;
-  }
-}
-
-export function RecruiterSignupWizard() {
-  const [step, setStep] = useState(1);
-  const labels = ["Basic", "Company"];
-  const stepTitles = ["Create Your Account", "Company Details"];
-  const stepUnder = [
-    "Sign up with your company-email to get started",
-    "Tell us about your company",
-  ];
-
+export default function RecruiterSignupWizard() {
   const form = useForm<RecruiterFormValues>({
     defaultValues: {
       fullName: "",
+      organisationId: "",
       email: "",
       password: "",
       confirmPassword: "",
-      companyName: "",
-      companyWebsite: "",
-      companySize: "",
-      companyDescription: "",
     },
     mode: "onTouched",
   });
@@ -65,109 +53,179 @@ export function RecruiterSignupWizard() {
     formState: { isSubmitting },
   } = form;
 
-  const onNext = async () => {
-    const valid = await trigger([
-      "fullName",
-      "email",
-      "password",
-      "confirmPassword",
-    ]);
-    if (valid) {
-      setStep(2);
-    }
-  };
+  const router = useRouter();
 
-  const onBack = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (step > 1) {
-      setStep((prev) => prev - 1);
-    }
-  };
+  const [organisations, setOrganisations] = React.useState<
+    PartnerOrganisationDTO[]
+  >([]);
+  useEffect(() => {
+    getAllPartnerOrganisations()
+      .then(setOrganisations)
+      .catch(() => toast.error("Failed to load organisations"));
+  }, []);
 
   const onSubmit = async (values: RecruiterFormValues) => {
     if (values.password !== values.confirmPassword) {
       setError("confirmPassword", {
         type: "validate",
-        message: "Passwords must match.",
+        message: "Passwords must match",
       });
-      setStep(1);
       return;
     }
 
-    const domain = getDomainFromUrl(values.companyWebsite);
-    if (!domain) {
-      setError("companyWebsite", {
-        type: "validate",
-        message: "Enter a valid URL (e.g. acme.com).",
+    const org = organisations.find((o) => o.id === values.organisationId);
+    if (!org) {
+      setError("organisationId", {
+        type: "required",
+        message: "Please select your organisation",
       });
       return;
     }
 
     const emailDomain = values.email.split("@")[1]?.toLowerCase();
-    if (!emailDomain || emailDomain !== domain) {
+    if (emailDomain !== org.domain.toLowerCase()) {
       setError("email", {
         type: "validate",
-        message: `Email domain must match company domain (“${domain}”).`,
+        message: `Invalid domain`,
       });
-      setStep(1);
       return;
     }
 
-    try {
-      console.log("Recruiter signup:", values);
-      toast.success("Recruiter account created! Redirecting…");
-      setTimeout(() => {
-        window.location.href = "/recruiter/dashboard";
-      }, 800);
-    } catch {
-      toast.error("Something went wrong. Please try again.");
+    const { data, error } = await signUp.email({
+      name: values.fullName,
+      email: values.email,
+      password: values.password,
+      role: "recruiter",
+      callbackURL: "/dashboard",
+    });
+    if (error || !data?.user) {
+      toast.error(error?.message || "Signup failed");
+      return;
     }
+
+    const { success, error: regErr } = await registerRecruiter({
+      userId: data.user.id,
+      organisationId: values.organisationId,
+    });
+    if (!success) {
+      toast.error(regErr || "Failed to save recruiter profile");
+      return;
+    }
+
+    toast.success("Check your email to complete signup");
+    router.push("/dashboard");
   };
 
   return (
-    <Form {...form}>
-      <Card className="w-full max-w-2xl rounded-xl border-0 shadow-none overflow-hidden">
-        <form onSubmit={step < labels.length ? onNext : handleSubmit(onSubmit)}>
-          <CardContent className="p-8">
-            <h2 className="text-2xl mb-1 font-bold text-gray-800">
-              {stepTitles[step - 1]}
-            </h2>
-            <p className="text-sm mb-6 text-gray-600">{stepUnder[step - 1]}</p>
+    <FormProvider {...form}>
+      <Card className="w-full border-0 max-w-lg mx-auto">
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <CardContent className="space-y-6 p-8">
+            <h2 className="text-2xl font-bold">Join as a Recruiter</h2>
 
-            <StepIndicator step={step} labels={labels} />
+            <FormField
+              control={form.control}
+              name="fullName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Jane Smith" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            {step === 1 && <RecruiterBasicStep />}
+            <FormField
+              control={form.control}
+              name="organisationId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Organisation</FormLabel>
+                  <FormControl>
+                    <Select
+                      value={field.value}
+                      onValueChange={(val) => {
+                        field.onChange(val);
+                        trigger("email");
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Search or select…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {organisations.map((org) => (
+                          <SelectItem key={org.id} value={org.id}>
+                            {org.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            {step === 2 && <RecruiterCompanyStep />}
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email Address</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="email"
+                      placeholder="you@your-company.com"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="password" placeholder="••••••••" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirm Password</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="password" placeholder="••••••••" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </CardContent>
 
-          <CardFooter className="flex justify-between px-8">
-            {step > 1 ? (
-              <Button variant="outline" onClick={onBack}>
-                Back
-              </Button>
-            ) : (
-              <div />
-            )}
-
-            {step < labels.length ? (
-              <Button type="button" onClick={onNext}>
-                Next
-              </Button>
-            ) : (
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className={`${
-                  isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-              >
-                {isSubmitting ? "Signing Up…" : "Sign Up"}
-              </Button>
-            )}
+          <CardFooter className="flex justify-end p-6">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className={isSubmitting ? "opacity-50 cursor-not-allowed" : ""}
+            >
+              {isSubmitting ? "Signing Up…" : "Sign Up"}
+            </Button>
           </CardFooter>
         </form>
       </Card>
-    </Form>
+    </FormProvider>
   );
 }

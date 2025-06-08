@@ -8,6 +8,7 @@ import { WelcomeBanner } from "./components/WelcomeBanner";
 import { ProfileCard } from "./components/ProfileCard";
 import { ProfileProfessionalForm } from "./components/ProfileProfessionalForm";
 import { InterviewProgressManager } from "./components/InterviewProgressManager";
+import { HideOrganisations } from "./components/HideOrganisations";
 import { authClient } from "@/lib/auth/auth-client";
 import {
   getCandidateProfile,
@@ -19,6 +20,11 @@ import {
   requestCandidateVerification,
 } from "@/features/candidate/candidate-use-cases";
 import type { TUserAuth } from "@/lib/auth/auth-types";
+import {
+  getAllPartnerOrganisations,
+  setHiddenOrganisationsForCandidate,
+} from "@/features/organisation/partner-organisations-use-cases";
+import type { PartnerOrganisationDTO } from "@/features/organisation/partner-organisations-dto";
 import type {
   CandidateProfileSummaryDTO,
   InterviewProgressEntryDTO,
@@ -27,7 +33,6 @@ import type { CompanyDTO } from "./components/SingleCompanySelect";
 import type { SkillDTO } from "./components/SkillMultiSelect";
 import type { InterviewProgress } from "./components/InterviewProgressItem";
 import { VerificationStatus, VerifyCallout } from "./components/VerifyCallout";
-
 export default function CandidateDashboard({ user }: { user: TUserAuth }) {
   const router = useRouter();
   const { data: session, error } = authClient.useSession();
@@ -46,18 +51,25 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
     about: "",
   });
   const [selSkills, setSelSkills] = useState<string[]>([]);
-
+  const [partnerOrgs, setPartnerOrgs] = useState<PartnerOrganisationDTO[]>([]);
+  const [hiddenOrgs, setHiddenOrgs] = useState<string[]>([]);
   useEffect(() => {
     if (error) {
       router.replace("/auth");
       return;
     }
     if (session?.user) {
-      Promise.all([getCandidateProfile(), getAllCompanies(), getAllSkills()])
-        .then(([p, c, s]) => {
+      Promise.all([
+        getCandidateProfile(),
+        getAllCompanies(),
+        getAllSkills(),
+        getAllPartnerOrganisations(),
+      ])
+        .then(([p, c, s, o]) => {
           setProfile(p);
           setCompanies(c);
           setSkills(s);
+          setPartnerOrgs(o);
           if (p) {
             setFormVals({
               professionalTitle: p.professionalTitle,
@@ -75,7 +87,22 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
         .finally(() => setLoading(false));
     }
   }, [session, error, router]);
+  const toggleHidden = (orgId: string) => {
+    setHiddenOrgs((prev) =>
+      prev.includes(orgId)
+        ? prev.filter((id) => id !== orgId)
+        : [...prev, orgId]
+    );
+  };
 
+  const saveHidden = async () => {
+    try {
+      await setHiddenOrganisationsForCandidate(hiddenOrgs);
+      toast.success("Visibility settings saved");
+    } catch {
+      toast.error("Could not save visibility settings");
+    }
+  };
   if (!session || loading) return null;
 
   const entries: InterviewProgress[] =
@@ -170,7 +197,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
     ) || [];
 
   return (
-    <main className="space-y-6 p-6">
+    <main className="space-y-4 p-6">
       <WelcomeBanner name={user.name} />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <ProfileCard
@@ -194,6 +221,14 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
           />
         </div>
       </div>
+      {profile && (
+        <HideOrganisations
+          partnerOrgs={partnerOrgs}
+          hiddenOrgs={hiddenOrgs}
+          onToggle={toggleHidden}
+          onSave={saveHidden}
+        />
+      )}
       {profile && (
         <VerifyCallout
           context="profile"

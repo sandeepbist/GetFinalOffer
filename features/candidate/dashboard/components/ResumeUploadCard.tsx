@@ -60,7 +60,7 @@ export const ResumeUploadCard: React.FC<ResumeUploadCardProps> = ({
         )}
         {!file && resumeUrl && (
           <a
-            href={resumeUrl}
+            href={resumeUrl}c
             target="_blank"
             rel="noreferrer"
             className="text-blue-600 underline text-sm"

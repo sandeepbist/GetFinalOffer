@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,68 +26,43 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Filter, Check, Eye } from "lucide-react";
 
-interface Candidate {
-  id: string;
-  name: string;
-  title: string;
-  location: string;
-  yearsExperience: number;
-  skills: string[];
-  companyCleared: string;
-}
+import { getVisibleCandidates } from "@/features/recruiter/candidates-use-cases";
+import type { CandidateSummaryDTO } from "@/features/recruiter/candidates-dto";
+import { getAllCompanies } from "@/features/candidate/candidate-use-cases";
+
 export default function CandidateSearch() {
   const [search, setSearch] = useState("");
   const [yearsFilter, setYearsFilter] = useState<number | null>(null);
   const [companyFilter, setCompanyFilter] = useState<string | null>(null);
 
-  const candidates: Candidate[] = [
-    {
-      id: "1",
-      name: "Michael Chen",
-      title: "Senior Frontend Developer",
-      location: "San Francisco, CA",
-      yearsExperience: 8,
-      skills: ["React", "TypeScript", "Node.js", "GraphQL"],
-      companyCleared: "Meta",
-    },
-    {
-      id: "2",
-      name: "Jessica Williams",
-      title: "Product Manager",
-      location: "New York, NY",
-      yearsExperience: 6,
-      skills: ["Product Strategy", "User Research", "Roadmapping", "Agile"],
-      companyCleared: "Amazon",
-    },
-    {
-      id: "3",
-      name: "David Johnson",
-      title: "UX Designer",
-      location: "Remote",
-      yearsExperience: 5,
-      skills: ["Figma", "Sketch", "User Flows"],
-      companyCleared: "Microsoft",
-    },
-  ];
+  const [candidates, setCandidates] = useState<CandidateSummaryDTO[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
-  const yearsOptions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-  const availableCompanies = ["Meta", "Google", "Amazon", "Apple", "Microsoft"];
+  useEffect(() => {
+    getVisibleCandidates(
+      page,
+      pageSize,
+      search || undefined,
+      yearsFilter ?? undefined,
+      companyFilter ?? undefined
+    ).then(({ data, total }) => {
+      setCandidates(data);
+      setTotal(total);
+    });
+  }, [page, search, yearsFilter, companyFilter]);
 
-  const filtered = candidates.filter((c) => {
-    if (
-      search &&
-      ![c.name, c.title].some((f) =>
-        f.toLowerCase().includes(search.toLowerCase())
-      )
-    )
-      return false;
-    if (yearsFilter !== null && c.yearsExperience < yearsFilter) return false;
-    if (companyFilter && c.companyCleared !== companyFilter) return false;
-    return true;
-  });
+  const [availableCompanies, setAvailableCompanies] = useState<string[]>([]);
+  useEffect(() => {
+    getAllCompanies().then((cs) => {
+      setAvailableCompanies(cs.map((c) => c.name));
+    });
+  }, []);
 
+  const yearsOptions = Array.from({ length: 11 }, (_, i) => i);
   const activeFilterCount =
-    (yearsFilter !== null ? 1 : 0) + (companyFilter ? 1 : 0);
+    (yearsFilter != null ? 1 : 0) + (companyFilter ? 1 : 0);
 
   return (
     <main className="space-y-3 p-6">
@@ -100,7 +75,10 @@ export default function CandidateSearch() {
         <Input
           placeholder="Search by name or title…"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           className="flex-1 min-w-[200px]"
         />
 
@@ -119,7 +97,6 @@ export default function CandidateSearch() {
               )}
             </Button>
           </PopoverTrigger>
-
           <PopoverContent className="w-72 p-2">
             <Accordion type="multiple" className="space-y-2">
               <AccordionItem value="years">
@@ -133,7 +110,10 @@ export default function CandidateSearch() {
                         return (
                           <CommandItem
                             key={y}
-                            onSelect={() => setYearsFilter(selected ? null : y)}
+                            onSelect={() => {
+                              setYearsFilter(selected ? null : y);
+                              setPage(1);
+                            }}
                           >
                             <Check
                               className={`mr-2 h-4 w-4 ${
@@ -160,9 +140,10 @@ export default function CandidateSearch() {
                         return (
                           <CommandItem
                             key={co}
-                            onSelect={() =>
-                              setCompanyFilter(selected ? null : co)
-                            }
+                            onSelect={() => {
+                              setCompanyFilter(selected ? null : co);
+                              setPage(1);
+                            }}
                           >
                             <Check
                               className={`mr-2 h-4 w-4 ${
@@ -183,8 +164,8 @@ export default function CandidateSearch() {
       </div>
 
       <div className="space-y-4">
-        {filtered.length > 0 ? (
-          filtered.map((c) => (
+        {candidates.length > 0 ? (
+          candidates.map((c) => (
             <Card key={c.id}>
               <CardContent className="flex items-center justify-between p-4">
                 <div className="flex items-start gap-4">
@@ -192,14 +173,11 @@ export default function CandidateSearch() {
                     <AvatarImage src={`/avatar.jpg`} alt={c.name} />
                     <AvatarFallback>{c.name.charAt(0)}</AvatarFallback>
                   </Avatar>
-
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {c.name}
-                      </h3>
-                    </div>
-                    <p className="text-sm text-gray-600">{c.title}</p>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {c.name}
+                    </h3>
+                    <p className="text-sm text-gray-600">{c.title ?? ""}</p>
                     <p className="text-sm text-gray-600">
                       {c.location} • {c.yearsExperience} years
                     </p>
@@ -212,7 +190,6 @@ export default function CandidateSearch() {
                     </div>
                   </div>
                 </div>
-
                 <Button
                   asChild
                   variant="outline"
@@ -220,7 +197,7 @@ export default function CandidateSearch() {
                   className="whitespace-nowrap"
                 >
                   <Link href={`/recruiter/candidates/${c.id}`}>
-                    <Eye />
+                    <Eye className="mr-1 h-4 w-4" />
                     View Profile
                   </Link>
                 </Button>
@@ -230,6 +207,27 @@ export default function CandidateSearch() {
         ) : (
           <p className="text-center text-gray-500 py-8">No candidates found.</p>
         )}
+      </div>
+
+      <div className="flex justify-center space-x-2">
+        <Button
+          variant="outline"
+          disabled={page <= 1}
+          onClick={() => setPage((p) => p - 1)}
+        >
+          Prev
+        </Button>
+        <span className="px-4 py-2">
+          {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of{" "}
+          {total}
+        </span>
+        <Button
+          variant="outline"
+          disabled={page * pageSize >= total}
+          onClick={() => setPage((p) => p + 1)}
+        >
+          Next
+        </Button>
       </div>
     </main>
   );

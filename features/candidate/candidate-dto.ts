@@ -44,7 +44,14 @@ export interface CandidateProfileSummaryDTO {
   interviewProgress: InterviewProgressEntryDTO[];
   verificationStatus: VerificationStatus;
 }
-
+export interface CandidateFullProfileDTO {
+  user: {
+    name: string;
+    email: string;
+    image: string;
+  };
+  profile: CandidateProfileSummaryDTO;
+}
 export type UpdateCandidateProfileDTO = {
   professionalTitle: string;
   currentRole: string;

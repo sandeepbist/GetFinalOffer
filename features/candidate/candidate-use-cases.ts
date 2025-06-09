@@ -7,10 +7,14 @@ import type {
 } from "./candidate-dto";
 import type { CompanyDTO } from "./dashboard/components/SingleCompanySelect";
 import type { SkillDTO } from "./dashboard/components/SkillMultiSelect";
+import { getCandidateFullById as repoGet } from "./candidate-repository";
 
 export async function getCandidateProfile(): Promise<CandidateProfileSummaryDTO | null> {
   const res = await apiAdapter.get<CandidateProfileSummaryDTO>("/candidate");
   return res.ok && res.data ? res.data : null;
+}
+export function getCandidateFullById(id: string) {
+  return repoGet(id);
 }
 
 export async function createCandidateProfile(

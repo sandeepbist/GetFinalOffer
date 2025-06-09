@@ -19,14 +19,14 @@ import {
 import { ChevronsUpDown, Check } from "lucide-react";
 
 export interface SkillDTO {
-  id: number;
+  id: string;
   name: string;
 }
 
 interface SkillMultiSelectProps {
   availableSkills: SkillDTO[];
-  selectedSkillIds: number[];
-  onChangeSkillIds: (ids: number[]) => void;
+  selectedSkillIds: string[];
+  onChangeSkillIds: (ids: string[]) => void;
 }
 
 export const SkillMultiSelect: React.FC<SkillMultiSelectProps> = ({

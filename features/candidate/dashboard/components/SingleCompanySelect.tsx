@@ -1,4 +1,3 @@
-// src/features/auth/components/SingleCompanySelect.tsx
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -18,14 +17,14 @@ import {
 import { ChevronsUpDown, Check } from "lucide-react";
 
 export interface CompanyDTO {
-  id: number;
+  id: string;
   name: string;
 }
 
 interface SingleCompanySelectProps {
   availableCompanies?: CompanyDTO[];
-  selectedCompanyId?: number | "";
-  onChangeCompanyId: (id: number) => void;
+  selectedCompanyId?: string | "";
+  onChangeCompanyId: (id: string) => void;
 }
 
 export const SingleCompanySelect: React.FC<SingleCompanySelectProps> = ({

@@ -12,13 +12,16 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { VerificationStatus } from "./VerifyCallout";
 
 export interface InterviewProgress {
-  companyId: number | "";
+  id: string;
+  companyId: string;
   position: string;
   roundsCleared: string;
   totalRounds: string;
   status: string;
+  verificationStatus: VerificationStatus;
   dateCleared: string;
 }
 
@@ -53,7 +56,6 @@ export const InterviewProgressItem: React.FC<InterviewProgressItemProps> = ({
       </button>
 
       <div className="space-y-4">
-        {/* Company dropdown instead of numeric ID input */}
         <div className="space-y-1">
           <Label htmlFor={`company-${index}`}>Company</Label>
           <SingleCompanySelect

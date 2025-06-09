@@ -50,19 +50,21 @@ CREATE TABLE "gfo_verification" (
 CREATE TABLE "gfo_candidate_hidden_organisations" (
 	"id" text PRIMARY KEY NOT NULL,
 	"candidate_user_id" text NOT NULL,
-	"organisation_id" integer NOT NULL,
+	"organisation_id" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "gfo_candidate_interview_progress" (
-	"id" serial PRIMARY KEY NOT NULL,
+	"id" text PRIMARY KEY NOT NULL,
 	"candidate_user_id" text NOT NULL,
-	"company_id" integer NOT NULL,
+	"company_id" text NOT NULL,
 	"rounds_cleared" integer DEFAULT 0 NOT NULL,
 	"total_rounds" integer DEFAULT 0 NOT NULL,
 	"date_cleared" timestamp NOT NULL,
-	"status" text DEFAULT 'pending' NOT NULL,
+	"status" text DEFAULT 'On Hold' NOT NULL,
+	"verification_status" text DEFAULT 'unverified' NOT NULL,
+	"position" text NOT NULL,
 	"verification_requested_at" timestamp,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
@@ -71,7 +73,7 @@ CREATE TABLE "gfo_candidate_interview_progress" (
 CREATE TABLE "gfo_candidate_skills" (
 	"id" text PRIMARY KEY NOT NULL,
 	"candidate_user_id" text NOT NULL,
-	"skill_id" integer NOT NULL,
+	"skill_id" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -81,6 +83,8 @@ CREATE TABLE "gfo_candidates" (
 	"years_experience" integer DEFAULT 0 NOT NULL,
 	"location" text NOT NULL,
 	"bio" text,
+	"professional_title" text,
+	"current_role" text,
 	"resume_url" text NOT NULL,
 	"verification_status" text DEFAULT 'unverified' NOT NULL,
 	"verification_requested_at" timestamp,
@@ -89,7 +93,7 @@ CREATE TABLE "gfo_candidates" (
 );
 --> statement-breakpoint
 CREATE TABLE "gfo_companies" (
-	"id" serial PRIMARY KEY NOT NULL,
+	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
@@ -97,8 +101,8 @@ CREATE TABLE "gfo_companies" (
 );
 --> statement-breakpoint
 CREATE TABLE "gfo_interview_documents" (
-	"id" serial PRIMARY KEY NOT NULL,
-	"interview_progress_id" integer NOT NULL,
+	"id" text PRIMARY KEY NOT NULL,
+	"interview_progress_id" text NOT NULL,
 	"document_url" text NOT NULL,
 	"subject" text NOT NULL,
 	"note" text,
@@ -107,7 +111,7 @@ CREATE TABLE "gfo_interview_documents" (
 );
 --> statement-breakpoint
 CREATE TABLE "gfo_skills_library" (
-	"id" serial PRIMARY KEY NOT NULL,
+	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
@@ -115,7 +119,7 @@ CREATE TABLE "gfo_skills_library" (
 );
 --> statement-breakpoint
 CREATE TABLE "gfo_contacts" (
-	"id" serial PRIMARY KEY NOT NULL,
+	"id" text PRIMARY KEY NOT NULL,
 	"recruiter_user_id" text NOT NULL,
 	"candidate_user_id" text NOT NULL,
 	"contacter" text NOT NULL,
@@ -125,7 +129,7 @@ CREATE TABLE "gfo_contacts" (
 );
 --> statement-breakpoint
 CREATE TABLE "gfo_partner_organisations" (
-	"id" serial PRIMARY KEY NOT NULL,
+	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"domain" text NOT NULL,
 	"website" text NOT NULL,
@@ -139,7 +143,7 @@ CREATE TABLE "gfo_partner_organisations" (
 --> statement-breakpoint
 CREATE TABLE "gfo_recruiters" (
 	"user_id" text PRIMARY KEY NOT NULL,
-	"organisation_id" integer NOT NULL,
+	"organisation_id" text NOT NULL,
 	"verification_status" text DEFAULT 'unverified' NOT NULL,
 	"verification_requested_at" timestamp,
 	"created_at" timestamp DEFAULT now() NOT NULL,

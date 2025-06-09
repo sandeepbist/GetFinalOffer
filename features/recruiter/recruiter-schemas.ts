@@ -1,13 +1,16 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 import { gfoUserTable } from "../auth/auth-schemas";
 import { gfoCandidatesTable } from "../candidate/candidate-schemas";
+import { createId } from "@paralleldrive/cuid2";
 
 export const gfoPartnerOrganisationsTable = pgTable(
   "gfo_partner_organisations",
   {
-    id: serial("id").primaryKey(),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
     name: text("name").notNull().unique(),
     domain: text("domain").notNull().unique(),
     website: text("website").notNull(),
@@ -23,7 +26,7 @@ export const gfoRecruitersTable = pgTable("gfo_recruiters", {
     .primaryKey()
     .notNull()
     .references(() => gfoUserTable.id, { onDelete: "cascade" }),
-  organisationId: integer("organisation_id")
+  organisationId: text("organisation_id")
     .notNull()
     .references(() => gfoPartnerOrganisationsTable.id, {
       onDelete: "restrict",
@@ -52,7 +55,9 @@ export const gfoRecruitersRelations = relations(
 );
 
 export const gfoContactsTable = pgTable("gfo_contacts", {
-  id: serial("id").primaryKey(),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
   recruiterUserId: text("recruiter_user_id")
     .notNull()
     .references(() => gfoRecruitersTable.userId, { onDelete: "restrict" }),

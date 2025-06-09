@@ -2,6 +2,7 @@ import type { ApiResponse as AdapterResponse } from "@/features/common/api/api-t
 import type {
   CreateCandidateProfileDTO,
   CreateCandidateProfileResponseDTO,
+  CandidateFullProfileDTO,
 } from "@/features/candidate/candidate-dto";
 import type { CreateCandidateResponse } from "@/features/candidate/candidate-dto";
 import type { ApiAdapterInterface } from "@/features/common/api/api-local-adapter";
@@ -20,7 +21,7 @@ export const CandidateRepository = (
     body.append("userId", dto.userId);
     body.append("professionalTitle", dto.professionalTitle);
     body.append("currentRole", dto.currentRole);
-    body.append("yearsExperience", String(dto.yearsOfExperience));
+    body.append("yearsExperience", String(dto.yearsExperience));
     body.append("location", dto.location);
     body.append("bio", dto.bio);
     body.append("skillIds", JSON.stringify(dto.skillIds));
@@ -33,3 +34,11 @@ export const CandidateRepository = (
     );
   },
 });
+
+export async function getCandidateFullById(
+  id: string
+): Promise<CandidateFullProfileDTO> {
+  const res = await fetch(`/api/candidate/${id}`);
+  if (!res.ok) throw new Error("Failed to load candidate");
+  return res.json();
+}

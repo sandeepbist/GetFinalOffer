@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
 
@@ -9,14 +9,18 @@ import {
 } from "../recruiter/recruiter-schemas";
 
 export const gfoSkillsLibraryTable = pgTable("gfo_skills_library", {
-  id: serial("id").primaryKey(),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
   name: text("name").notNull().unique(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const gfoCompaniesTable = pgTable("gfo_companies", {
-  id: serial("id").primaryKey(),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
   name: text("name").notNull().unique(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -62,7 +66,7 @@ export const gfoCandidateSkillsTable = pgTable("gfo_candidate_skills", {
   candidateUserId: text("candidate_user_id")
     .notNull()
     .references(() => gfoCandidatesTable.userId, { onDelete: "cascade" }),
-  skillId: integer("skill_id")
+  skillId: text("skill_id")
     .notNull()
     .references(() => gfoSkillsLibraryTable.id, { onDelete: "restrict" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -92,7 +96,7 @@ export const gfoCandidateHiddenOrganisationsTable = pgTable(
     candidateUserId: text("candidate_user_id")
       .notNull()
       .references(() => gfoCandidatesTable.userId, { onDelete: "cascade" }),
-    organisationId: integer("organisation_id")
+    organisationId: text("organisation_id")
       .notNull()
       .references(() => gfoPartnerOrganisationsTable.id, {
         onDelete: "cascade",
@@ -119,17 +123,22 @@ export const gfoCandidateHiddenOrganisationsRelations = relations(
 export const gfoCandidateInterviewProgressTable = pgTable(
   "gfo_candidate_interview_progress",
   {
-    id: serial("id").primaryKey(),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
     candidateUserId: text("candidate_user_id")
       .notNull()
       .references(() => gfoCandidatesTable.userId, { onDelete: "cascade" }),
-    companyId: integer("company_id")
+    companyId: text("company_id")
       .notNull()
       .references(() => gfoCompaniesTable.id, { onDelete: "restrict" }),
     roundsCleared: integer("rounds_cleared").notNull().default(0),
     totalRounds: integer("total_rounds").notNull().default(0),
     dateCleared: timestamp("date_cleared").notNull(),
-    status: text("status").notNull().default("pending"),
+    status: text("status").notNull().default("On Hold"),
+    verificationStatus: text("verification_status")
+      .notNull()
+      .default("unverified"),
     position: text("position").notNull(),
     verificationRequestedAt: timestamp("verification_requested_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -153,8 +162,10 @@ export const gfoCandidateInterviewProgressRelations = relations(
 );
 
 export const gfoInterviewDocumentsTable = pgTable("gfo_interview_documents", {
-  id: serial("id").primaryKey(),
-  interviewProgressId: integer("interview_progress_id")
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  interviewProgressId: text("interview_progress_id")
     .notNull()
     .references(() => gfoCandidateInterviewProgressTable.id, {
       onDelete: "cascade",

@@ -11,7 +11,7 @@ export interface Job {
   benefits: string[];
   location: string;
   salary: string;
-  type: string; // full-time, part-time, contract, etc.
+  type: string; 
 }
 
 export const Job: Job[] = [
@@ -182,7 +182,6 @@ export const Job: Job[] = [
   },
 ];
 
-// Saved and applied jobs will be managed in the application state
 export interface SavedJob extends Job {
   savedAt: Date;
 }

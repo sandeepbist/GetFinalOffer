@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,12 +24,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Filter, Check, Eye } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CandidateProfileModal } from "@/features/contacts/components/CandidateProfileModal";
+import { useSession } from "@/lib/auth/auth-client";
 
 import { getVisibleCandidates } from "@/features/recruiter/candidates-use-cases";
 import type { CandidateSummaryDTO } from "@/features/recruiter/candidates-dto";
 import { getAllCompanies } from "@/features/candidate/candidate-use-cases";
 
 export default function CandidateSearch() {
+  const { data: session } = useSession();
+  const [selected, setSelected] = useState<string | null>(null);
+
   const [search, setSearch] = useState("");
   const [yearsFilter, setYearsFilter] = useState<number | null>(null);
   const [companyFilter, setCompanyFilter] = useState<string | null>(null);
@@ -38,31 +43,39 @@ export default function CandidateSearch() {
   const [candidates, setCandidates] = useState<CandidateSummaryDTO[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
   const pageSize = 10;
 
   useEffect(() => {
+    setLoading(true);
     getVisibleCandidates(
       page,
       pageSize,
       search || undefined,
       yearsFilter ?? undefined,
       companyFilter ?? undefined
-    ).then(({ data, total }) => {
-      setCandidates(data);
-      setTotal(total);
-    });
+    )
+      .then(({ data, total }) => {
+        setCandidates(data);
+        setTotal(total);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [page, search, yearsFilter, companyFilter]);
 
   const [availableCompanies, setAvailableCompanies] = useState<string[]>([]);
   useEffect(() => {
-    getAllCompanies().then((cs) => {
-      setAvailableCompanies(cs.map((c) => c.name));
-    });
+    getAllCompanies().then((cs) =>
+      setAvailableCompanies(cs.map((c) => c.name))
+    );
   }, []);
 
   const yearsOptions = Array.from({ length: 11 }, (_, i) => i);
   const activeFilterCount =
     (yearsFilter != null ? 1 : 0) + (companyFilter ? 1 : 0);
+
+  const skeletonCount = 5;
 
   return (
     <main className="space-y-3 p-6">
@@ -106,18 +119,18 @@ export default function CandidateSearch() {
                     <CommandInput placeholder="Min years…" />
                     <CommandList className="max-h-40 overflow-auto">
                       {yearsOptions.map((y) => {
-                        const selected = y === yearsFilter;
+                        const sel = y === yearsFilter;
                         return (
                           <CommandItem
                             key={y}
                             onSelect={() => {
-                              setYearsFilter(selected ? null : y);
+                              setYearsFilter(sel ? null : y);
                               setPage(1);
                             }}
                           >
                             <Check
                               className={`mr-2 h-4 w-4 ${
-                                selected ? "opacity-100" : "opacity-0"
+                                sel ? "opacity-100" : "opacity-0"
                               }`}
                             />
                             {y}+ years
@@ -136,18 +149,18 @@ export default function CandidateSearch() {
                     <CommandInput placeholder="Select company…" />
                     <CommandList className="max-h-40 overflow-auto">
                       {availableCompanies.map((co) => {
-                        const selected = co === companyFilter;
+                        const sel = co === companyFilter;
                         return (
                           <CommandItem
                             key={co}
                             onSelect={() => {
-                              setCompanyFilter(selected ? null : co);
+                              setCompanyFilter(sel ? null : co);
                               setPage(1);
                             }}
                           >
                             <Check
                               className={`mr-2 h-4 w-4 ${
-                                selected ? "opacity-100" : "opacity-0"
+                                sel ? "opacity-100" : "opacity-0"
                               }`}
                             />
                             {co}
@@ -164,7 +177,24 @@ export default function CandidateSearch() {
       </div>
 
       <div className="space-y-4">
-        {candidates.length > 0 ? (
+        {loading ? (
+          Array.from({ length: skeletonCount }).map((_, idx) => (
+            <Card key={idx}>
+              <CardContent className="flex items-center gap-4 p-4">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/5" />
+                  <Skeleton className="h-4 w-2/5" />
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <Skeleton className="h-6 w-12 rounded-full" />
+                    <Skeleton className="h-6 w-12 rounded-full" />
+                  </div>
+                </div>
+                <Skeleton className="h-8 w-20 rounded" />
+              </CardContent>
+            </Card>
+          ))
+        ) : candidates.length > 0 ? (
           candidates.map((c) => (
             <Card key={c.id}>
               <CardContent className="flex items-center justify-between p-4">
@@ -191,15 +221,13 @@ export default function CandidateSearch() {
                   </div>
                 </div>
                 <Button
-                  asChild
                   variant="outline"
                   size="sm"
                   className="whitespace-nowrap"
+                  onClick={() => setSelected(c.id)}
                 >
-                  <Link href={`/recruiter/candidates/${c.id}`}>
-                    <Eye className="mr-1 h-4 w-4" />
-                    View Profile
-                  </Link>
+                  <Eye className="mr-1 h-4 w-4" />
+                  View Profile
                 </Button>
               </CardContent>
             </Card>
@@ -229,6 +257,14 @@ export default function CandidateSearch() {
           Next
         </Button>
       </div>
+
+      {session?.user && (
+        <CandidateProfileModal
+          userId={selected!}
+          open={!!selected}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </main>
   );
 }

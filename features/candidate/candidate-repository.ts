@@ -2,6 +2,7 @@ import type { ApiResponse as AdapterResponse } from "@/features/common/api/api-t
 import type {
   CreateCandidateProfileDTO,
   CreateCandidateProfileResponseDTO,
+  CandidateFullProfileDTO,
 } from "@/features/candidate/candidate-dto";
 import type { CreateCandidateResponse } from "@/features/candidate/candidate-dto";
 import type { ApiAdapterInterface } from "@/features/common/api/api-local-adapter";
@@ -33,3 +34,11 @@ export const CandidateRepository = (
     );
   },
 });
+
+export async function getCandidateFullById(
+  id: string
+): Promise<CandidateFullProfileDTO> {
+  const res = await fetch(`/api/candidate/${id}`);
+  if (!res.ok) throw new Error("Failed to load candidate");
+  return res.json();
+}

@@ -1,10 +1,10 @@
-import { Queue, Worker } from "bullmq";
+import { Queue, Worker, type Processor, type ConnectionOptions } from "bullmq";
 import { redis } from "./redis";
 
 export const RESUME_QUEUE_NAME = "resume-processing";
 
 export const resumeQueue = new Queue(RESUME_QUEUE_NAME, {
-  connection: redis as any,
+  connection: redis as unknown as ConnectionOptions,
   defaultJobOptions: {
     attempts: 3,
     backoff: {
@@ -16,9 +16,9 @@ export const resumeQueue = new Queue(RESUME_QUEUE_NAME, {
   },
 });
 
-export const createResumeWorker = (processor: any) => {
+export const createResumeWorker = (processor: Processor) => {
   return new Worker(RESUME_QUEUE_NAME, processor, {
-    connection: redis as any,
+    connection: redis as unknown as ConnectionOptions,
     concurrency: 1,
   });
 };

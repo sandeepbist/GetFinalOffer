@@ -216,8 +216,8 @@ function BentoGrid() {
                 Instant Qualification
               </h3>
               <p className="text-lg text-slate-600 max-w-md font-medium">
-                Don't waste 40 hours on take-home assignments. Prove your skills
-                once and apply to 50+ companies instantly.
+                Don&apos;t waste 40 hours on take-home assignments. Prove your
+                skills once and apply to 50+ companies instantly.
               </p>
             </div>
             <div className="absolute bottom-0 left-0 right-0 h-[220px] z-10">
@@ -340,7 +340,7 @@ function Testimonials() {
               ))}
             </div>
             <p className="text-lg text-slate-700 mb-8 leading-relaxed font-medium">
-              "{t.text}"
+              &quot;{t.text}&quot;
             </p>
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-400 text-xl">

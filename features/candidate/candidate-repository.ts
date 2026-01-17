@@ -9,12 +9,12 @@ import type { ApiAdapterInterface } from "@/features/common/api/api-local-adapte
 
 export interface CandidateRepositoryInterface {
   createProfile(
-    dto: CreateCandidateProfileDTO
+    dto: CreateCandidateProfileDTO,
   ): Promise<AdapterResponse<CreateCandidateResponse>>;
 }
 
 export const CandidateRepository = (
-  api: ApiAdapterInterface
+  api: ApiAdapterInterface,
 ): CandidateRepositoryInterface => ({
   async createProfile(dto) {
     const body = new FormData();
@@ -30,15 +30,24 @@ export const CandidateRepository = (
 
     return await api.post<CreateCandidateProfileResponseDTO>(
       "/candidate",
-      body
+      body,
     );
   },
 });
 
 export async function getCandidateFullById(
-  id: string
+  id: string,
 ): Promise<CandidateFullProfileDTO> {
   const res = await fetch(`/api/candidate/${id}`);
   if (!res.ok) throw new Error("Failed to load candidate");
   return res.json();
+}
+export async function updateCandidateEmbedding(
+  userId: string,
+  embedding: number[],
+): Promise<void> {
+  await db
+    .update(gfoCandidatesTable)
+    .set({ embedding })
+    .where(eq(gfoCandidatesTable.userId, userId));
 }

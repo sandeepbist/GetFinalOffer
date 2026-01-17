@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     if (!userId || !organisationId) {
       return NextResponse.json(
         { success: false, error: "Missing userId or organisationId" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -25,11 +25,12 @@ export async function POST(req: NextRequest) {
       .onConflictDoNothing({ target: gfoRecruitersTable.userId });
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
+  } catch (err) {
     console.error("Error creating recruiter:", err);
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json(
-      { success: false, error: err.message },
-      { status: 500 }
+      { success: false, error: errorMessage },
+      { status: 500 },
     );
   }
 }

@@ -97,7 +97,8 @@ export default function RecruiterSignupWizard() {
       password: values.password,
       role: "recruiter",
       callbackURL: "/dashboard",
-    });
+    } as any);
+
     if (error || !data?.user) {
       toast.error(error?.message || "Signup failed");
       return;

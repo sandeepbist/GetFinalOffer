@@ -3,8 +3,8 @@ import type {
   CreateCandidateProfileDTO,
   CreateCandidateProfileResponseDTO,
   CandidateFullProfileDTO,
+  CreateCandidateResponse,
 } from "@/features/candidate/candidate-dto";
-import type { CreateCandidateResponse } from "@/features/candidate/candidate-dto";
 import type { ApiAdapterInterface } from "@/features/common/api/api-local-adapter";
 
 export interface CandidateRepositoryInterface {
@@ -41,13 +41,4 @@ export async function getCandidateFullById(
   const res = await fetch(`/api/candidate/${id}`);
   if (!res.ok) throw new Error("Failed to load candidate");
   return res.json();
-}
-export async function updateCandidateEmbedding(
-  userId: string,
-  embedding: number[],
-): Promise<void> {
-  await db
-    .update(gfoCandidatesTable)
-    .set({ embedding })
-    .where(eq(gfoCandidatesTable.userId, userId));
 }

@@ -25,11 +25,11 @@ export interface CreateCandidateProfileDTO {
 }
 
 export interface CreateCandidateProfileResponseDTO {
-  success: true;
+  success: boolean;
 }
 
 export interface CreateCandidateResponse {
-  success: true;
+  success: boolean;
 }
 
 export interface CandidateProfileSummaryDTO {
@@ -44,6 +44,7 @@ export interface CandidateProfileSummaryDTO {
   interviewProgress: InterviewProgressEntryDTO[];
   verificationStatus: VerificationStatus;
 }
+
 export interface CandidateFullProfileDTO {
   user: {
     name: string;
@@ -52,6 +53,7 @@ export interface CandidateFullProfileDTO {
   };
   profile: CandidateProfileSummaryDTO;
 }
+
 export type UpdateCandidateProfileDTO = {
   professionalTitle: string;
   currentRole: string;
@@ -60,3 +62,31 @@ export type UpdateCandidateProfileDTO = {
   bio: string;
   skillIds: string[];
 };
+
+export interface VerificationBaseDTO {
+  subject: string;
+  notes: string;
+  files: File[];
+}
+
+export interface VerificationProfileRequestDTO extends VerificationBaseDTO {
+  action: "profile";
+}
+
+export interface VerificationInterviewRequestDTO extends VerificationBaseDTO {
+  action: "interview";
+  interviewProgressId: string;
+}
+
+export type VerificationRequestDTO =
+  | VerificationProfileRequestDTO
+  | VerificationInterviewRequestDTO;
+
+export interface VerificationResponseDTO {
+  success: boolean;
+  error?: string;
+}
+
+export interface ResumeUploadResponseDTO {
+  resumeUrl: string;
+}

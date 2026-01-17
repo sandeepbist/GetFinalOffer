@@ -2,8 +2,8 @@ import "dotenv/config";
 import { processAnalyticsBatch } from "@/features/analytics/analytics-data-access";
 
 const BATCH_SIZE = 50;
-const MIN_POLL_INTERVAL = 1000;
-const MAX_POLL_INTERVAL = 30000;
+const MIN_POLL_INTERVAL = 10000;
+const MAX_POLL_INTERVAL = 60000;
 const ERROR_BACKOFF = 5000;
 
 let shouldRun = true;

@@ -24,7 +24,7 @@ import { useRouter } from "next/navigation";
 import { getAllPartnerOrganisations } from "@/features/organisation/partner-organisations-use-cases";
 import { registerRecruiter } from "@/features/recruiter/recruiter-use-cases";
 import { signUp } from "@/lib/auth/auth-client";
-import { PartnerOrganisationDTO } from "@/features/organisation/partner-organisations-dto";
+import type { PartnerOrganisationDTO } from "@/features/organisation/partner-organisations-dto";
 
 interface RecruiterFormValues {
   fullName: string;
@@ -58,6 +58,7 @@ export default function RecruiterSignupWizard() {
   const [organisations, setOrganisations] = React.useState<
     PartnerOrganisationDTO[]
   >([]);
+
   useEffect(() => {
     getAllPartnerOrganisations()
       .then(setOrganisations)
@@ -86,10 +87,12 @@ export default function RecruiterSignupWizard() {
     if (emailDomain !== org.domain.toLowerCase()) {
       setError("email", {
         type: "validate",
-        message: `Invalid domain`,
+        message: `Invalid domain. Must match ${org.domain}`,
       });
       return;
     }
+
+    type SignUpParams = Parameters<typeof signUp.email>[0];
 
     const { data, error } = await signUp.email({
       name: values.fullName,
@@ -97,7 +100,7 @@ export default function RecruiterSignupWizard() {
       password: values.password,
       role: "recruiter",
       callbackURL: "/dashboard",
-    } as any);
+    } as SignUpParams & { role: "recruiter" });
 
     if (error || !data?.user) {
       toast.error(error?.message || "Signup failed");
@@ -108,6 +111,7 @@ export default function RecruiterSignupWizard() {
       userId: data.user.id,
       organisationId: values.organisationId,
     });
+
     if (!success) {
       toast.error(regErr || "Failed to save recruiter profile");
       return;

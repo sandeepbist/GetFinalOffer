@@ -115,11 +115,11 @@ export const InterviewProgressManager: React.FC<
                     context="interview"
                     status={e.verificationStatus}
                     onSubmit={async ({ subject, notes, links, files }) => {
-                      await requestCandidateVerification("interview", {
-                        subject,
-                        notes,
-                        links,
-                        files,
+                      await requestCandidateVerification({
+                        action: "interview",
+                        subject: subject,
+                        notes: `${notes}\n\nLinks: ${links}`,
+                        files: files,
                         interviewProgressId: String(e.id),
                       });
                     }}

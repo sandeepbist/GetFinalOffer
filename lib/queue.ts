@@ -19,6 +19,8 @@ export const resumeQueue = new Queue(RESUME_QUEUE_NAME, {
 export const createResumeWorker = (processor: Processor) => {
   return new Worker(RESUME_QUEUE_NAME, processor, {
     connection: redis as unknown as ConnectionOptions,
-    concurrency: 1,
+    concurrency: 1,stalledInterval: 300000,
+    lockDuration: 60000,
+    drainDelay: 5000,
   });
 };

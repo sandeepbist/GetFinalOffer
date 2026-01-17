@@ -37,9 +37,8 @@ import { VerificationStatus, VerifyCallout } from "./components/VerifyCallout";
 export default function CandidateDashboard({ user }: { user: TUserAuth }) {
   const router = useRouter();
   const { data: session, error } = authClient.useSession();
-  const [profile, setProfile] = useState<CandidateProfileSummaryDTO | null>(
-    null
-  );
+
+  const [profile, setProfile] = useState<CandidateProfileSummaryDTO | null>(null);
   const [companies, setCompanies] = useState<CompanyDTO[]>([]);
   const [skills, setSkills] = useState<SkillDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +53,11 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
   const [selSkills, setSelSkills] = useState<string[]>([]);
   const [partnerOrgs, setPartnerOrgs] = useState<PartnerOrganisationDTO[]>([]);
   const [hiddenOrgs, setHiddenOrgs] = useState<string[]>([]);
+
+  const getErrorMessage = (err: unknown) => {
+    if (err instanceof Error) return err.message;
+    return String(err);
+  };
 
   useEffect(() => {
     if (error) {
@@ -83,7 +87,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
             setSelSkills(p.skillIds);
           }
         })
-        .catch((err) => {
+        .catch(() => {
           toast.error("Failed to initialize dashboard");
         })
         .finally(() => setLoading(false));
@@ -150,8 +154,8 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
         setProfile({ ...profile, resumeUrl: url });
         toast.success("Resume uploaded");
       }
-    } catch (err: any) {
-      toast.error(err.message || "Resume upload failed");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || "Resume upload failed");
     }
   };
 
@@ -168,8 +172,8 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
       setProfile(await getCandidateProfile());
       setEditing(false);
       toast.success("Profile updated");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to update profile");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || "Failed to update profile");
     }
   };
 
@@ -180,15 +184,25 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
     files: File[];
   }) => {
     try {
-      const ok = await requestCandidateVerification("profile", data);
+      const combinedNotes = data.links
+        ? `${data.notes}\n\nLinks provided:\n${data.links}`
+        : data.notes;
+
+      const ok = await requestCandidateVerification({
+        action: "profile",
+        subject: data.subject,
+        notes: combinedNotes,
+        files: data.files,
+      });
+
       if (ok) {
         setProfile(await getCandidateProfile());
         toast.success("Verification request sent");
       } else {
         toast.error("Request failed");
       }
-    } catch (err: any) {
-      toast.error(err.message || "Request failed");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || "Request failed");
     }
   };
 

@@ -23,7 +23,7 @@ interface Props {
 }
 
 export function CandidateProfileModal({ userId, open, onClose }: Props) {
-  const { data: session } = useSession(); // Access Recruiter ID
+  const { data: session } = useSession();
   const [full, setFull] = useState<CandidateFullProfileDTO | null>(null);
   const [sending, setSending] = useState(false);
 

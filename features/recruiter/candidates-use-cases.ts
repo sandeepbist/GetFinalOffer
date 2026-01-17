@@ -8,7 +8,7 @@ export async function getVisibleCandidates(
   pageSize = 10,
   search?: string,
   minYears?: number,
-  company?: string
+  company?: string,
 ) {
   const res = await repo.getCandidates({
     page,
@@ -18,5 +18,6 @@ export async function getVisibleCandidates(
     company,
   });
   if (!res.ok) throw new Error(res.error || "Failed to load candidates");
-  return res.data;
+
+  return res.data!;
 }

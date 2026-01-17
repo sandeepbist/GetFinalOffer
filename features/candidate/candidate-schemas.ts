@@ -1,4 +1,11 @@
-import { pgTable, text, integer, timestamp } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  integer,
+  timestamp,
+  index,
+  vector,
+} from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
 
@@ -29,21 +36,42 @@ export const gfoCompaniesTable = pgTable("gfo_companies", {
 export const gfoCandidatesTable = pgTable("gfo_candidates", {
   userId: text("user_id")
     .primaryKey()
-    .notNull()
     .references(() => gfoUserTable.id, { onDelete: "cascade" }),
-  yearsExperience: integer("years_experience").notNull().default(0),
-  location: text("location").notNull(),
-  bio: text("bio"),
   professionalTitle: text("professional_title"),
   currentRole: text("current_role"),
+  yearsExperience: integer("years_experience").default(0).notNull(),
+  location: text("location").notNull(),
+  bio: text("bio"),
   resumeUrl: text("resume_url").notNull(),
   verificationStatus: text("verification_status")
-    .notNull()
-    .default("unverified"),
+    .default("unverified")
+    .notNull(),
   verificationRequestedAt: timestamp("verification_requested_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const gfoCandidateResumeChunksTable = pgTable(
+  "gfo_candidate_resume_chunks",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    candidateUserId: text("candidate_user_id")
+      .notNull()
+      .references(() => gfoCandidatesTable.userId, { onDelete: "cascade" }),
+    chunkContent: text("chunk_content").notNull(),
+    chunkIndex: integer("chunk_index").notNull(),
+    embedding: vector("embedding", { dimensions: 1536 }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("chunk_embedding_idx").using(
+      "hnsw",
+      table.embedding.op("vector_cosine_ops")
+    ),
+  ]
+);
 
 export const gfoCandidatesRelations = relations(
   gfoCandidatesTable,
@@ -56,6 +84,17 @@ export const gfoCandidatesRelations = relations(
     hiddenOrganisations: many(gfoCandidateHiddenOrganisationsTable),
     interviewProgress: many(gfoCandidateInterviewProgressTable),
     contacts: many(gfoContactsTable),
+    resumeChunks: many(gfoCandidateResumeChunksTable),
+  })
+);
+
+export const gfoCandidateResumeChunksRelations = relations(
+  gfoCandidateResumeChunksTable,
+  ({ one }) => ({
+    candidate: one(gfoCandidatesTable, {
+      fields: [gfoCandidateResumeChunksTable.candidateUserId],
+      references: [gfoCandidatesTable.userId],
+    }),
   })
 );
 

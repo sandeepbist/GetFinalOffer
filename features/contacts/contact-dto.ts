@@ -4,5 +4,5 @@ export interface ContactCreateDTO {
 export interface ContactCreateResponse {
   success: boolean;
   error?: string;
-  alreadyInvited: boolean;
+  alreadyInvited?: boolean;
 }

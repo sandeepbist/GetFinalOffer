@@ -35,9 +35,10 @@ export async function insertCandidate(data: {
     .returning();
   return created;
 }
+
 export async function insertCandidateSkills(
   candidateUserId: string,
-  skillIds: number[]
+  skillIds: string[],
 ): Promise<void> {
   if (skillIds.length === 0) return;
   const records = skillIds.map((skillId) => ({
@@ -46,16 +47,17 @@ export async function insertCandidateSkills(
   }));
   await db.insert(gfoCandidateSkillsTable).values(records);
 }
+
 export async function insertInterviewProgress(
   candidateUserId: string,
   entries: Array<{
-    companyId: number;
+    companyId: string;
     position: string;
     roundsCleared: number;
     totalRounds: number;
     status: string;
     dateCleared: Date;
-  }>
+  }>,
 ): Promise<void> {
   if (entries.length === 0) return;
   const records = entries.map((entry) => ({

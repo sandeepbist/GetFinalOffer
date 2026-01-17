@@ -6,4 +6,6 @@ export interface CandidateSummaryDTO {
   yearsExperience: number;
   skills: string[];
   companyCleared: string | null;
+  matchHighlight?: string;
+  matchScore?: number;
 }

@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import db from "@/db";
 import { gfoSkillsLibraryTable } from "@/db/schemas";
 import type { InferModel } from "drizzle-orm";
 
 export type SkillDTO = InferModel<typeof gfoSkillsLibraryTable, "select">;
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const skills = await db
       .select({
@@ -16,11 +15,9 @@ export async function GET(req: NextRequest) {
       .from(gfoSkillsLibraryTable);
 
     return NextResponse.json(skills, { status: 200 });
-  } catch (err: any) {
+  } catch (err) {
     console.error("Error in GET /api/skills:", err);
-    return NextResponse.json(
-      { error: err.message || "Server error" },
-      { status: 500 }
-    );
+    const errorMessage = err instanceof Error ? err.message : "Server error";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

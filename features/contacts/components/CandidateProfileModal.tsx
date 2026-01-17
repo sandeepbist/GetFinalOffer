@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,6 +13,9 @@ import { sendInvite } from "@/features/contacts/contact-use-cases";
 import { getCandidateFullById } from "@/features/candidate/candidate-use-cases";
 import type { CandidateFullProfileDTO } from "@/features/candidate/candidate-dto";
 
+import { trackProfileView } from "@/features/analytics/analytics-use-cases";
+import { useSession } from "@/lib/auth/auth-client";
+
 interface Props {
   userId: string;
   open: boolean;
@@ -20,18 +23,36 @@ interface Props {
 }
 
 export function CandidateProfileModal({ userId, open, onClose }: Props) {
+  const { data: session } = useSession(); // Access Recruiter ID
   const [full, setFull] = useState<CandidateFullProfileDTO | null>(null);
   const [sending, setSending] = useState(false);
 
+  const viewStartTimeRef = useRef<number | null>(null);
+
   useEffect(() => {
     if (open) {
+      viewStartTimeRef.current = Date.now();
+
       getCandidateFullById(userId)
         .then(setFull)
         .catch(() => setFull(null));
     } else {
       setFull(null);
     }
-  }, [open, userId]);
+
+    return () => {
+      if (open && viewStartTimeRef.current && session?.user?.id) {
+        const duration = Date.now() - viewStartTimeRef.current;
+
+        if (duration > 500) {
+          trackProfileView(session.user.id, {
+            candidateId: userId,
+            durationMs: duration
+          });
+        }
+      }
+    };
+  }, [open, userId, session?.user?.id]);
 
   const handleSend = async () => {
     setSending(true);

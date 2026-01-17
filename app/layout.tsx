@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,12 +25,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="scroll-smooth">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gradient-to-br from-blue-50 to-white text-gray-800`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-zinc-950`}
       >
         <Header />
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-0">{children}</div>
+        <main>{children}</main>
         <Toaster />
       </body>
     </html>

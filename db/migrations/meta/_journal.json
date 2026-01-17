@@ -8,6 +8,27 @@
       "when": 1749322560727,
       "tag": "20250607185600_low_nitro",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1768247840761,
+      "tag": "20260112195720_short_sersi",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1768567380733,
+      "tag": "20260116124300_lame_mimic",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1768647525678,
+      "tag": "20260117105845_stale_fat_cobra",
+      "breakpoints": true
     }
   ]
 }

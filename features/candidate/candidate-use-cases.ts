@@ -2,8 +2,12 @@ import apiAdapter from "@/features/common/api/api-local-adapter";
 import type {
   CandidateProfileSummaryDTO,
   CreateCandidateProfileDTO,
+  CreateCandidateResponse,
   InterviewProgressEntryDTO,
   UpdateCandidateProfileDTO,
+  VerificationRequestDTO,
+  VerificationResponseDTO,
+  ResumeUploadResponseDTO,
 } from "./candidate-dto";
 import type { CompanyDTO } from "./dashboard/components/SingleCompanySelect";
 import type { SkillDTO } from "./dashboard/components/SkillMultiSelect";
@@ -13,6 +17,7 @@ export async function getCandidateProfile(): Promise<CandidateProfileSummaryDTO 
   const res = await apiAdapter.get<CandidateProfileSummaryDTO>("/candidate");
   return res.ok && res.data ? res.data : null;
 }
+
 export function getCandidateFullById(id: string) {
   return repoGet(id);
 }
@@ -21,20 +26,19 @@ export async function createCandidateProfile(
   dto: CreateCandidateProfileDTO
 ): Promise<boolean> {
   const body = new FormData();
-  Object.entries({
-    userId: dto.userId,
-    professionalTitle: dto.professionalTitle,
-    currentRole: dto.currentRole,
-    yearsExperience: String(dto.yearsExperience),
-    location: dto.location,
-    verificationStatus: dto.verificationStatus,
-    bio: dto.bio,
-    skillIds: JSON.stringify(dto.skillIds),
-    interviewProgress: JSON.stringify(dto.interviewProgress),
-  }).forEach(([k, v]) => body.append(k, v));
+  body.append("userId", dto.userId);
+  body.append("professionalTitle", dto.professionalTitle);
+  body.append("currentRole", dto.currentRole);
+  body.append("yearsExperience", String(dto.yearsExperience));
+  body.append("location", dto.location);
+  body.append("verificationStatus", dto.verificationStatus);
+  body.append("bio", dto.bio);
+  body.append("skillIds", JSON.stringify(dto.skillIds));
+  body.append("interviewProgress", JSON.stringify(dto.interviewProgress));
   body.append("resume", dto.resumeFile);
-  const raw = await fetch("/api/candidate", { method: "POST", body });
-  return raw.ok;
+
+  const res = await apiAdapter.post<CreateCandidateResponse>("/candidate", body);
+  return res.ok;
 }
 
 export async function updateCandidateProfile(
@@ -62,10 +66,27 @@ export async function uploadCandidateResume(
 ): Promise<string | null> {
   const body = new FormData();
   body.append("resume", file);
+
   const raw = await fetch("/api/candidate", { method: "PATCH", body });
+
   if (!raw.ok) return null;
-  const json = await raw.json();
-  return (json as any).resumeUrl;
+
+  const json: unknown = await raw.json();
+
+  if (isResumeUploadResponse(json)) {
+    return json.resumeUrl;
+  }
+
+  return null;
+}
+
+function isResumeUploadResponse(data: unknown): data is ResumeUploadResponseDTO {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "resumeUrl" in data &&
+    typeof (data as ResumeUploadResponseDTO).resumeUrl === "string"
+  );
 }
 
 export async function getAllCompanies(): Promise<CompanyDTO[]> {
@@ -79,36 +100,23 @@ export async function getAllSkills(): Promise<SkillDTO[]> {
 }
 
 export async function requestCandidateVerification(
-  action: "profile",
-  payload: { subject: string; notes: string; links: string; files: File[] }
-): Promise<boolean>;
-export async function requestCandidateVerification(
-  action: "interview",
-  payload: {
-    subject: string;
-    notes: string;
-    links: string;
-    files: File[];
-    interviewProgressId: string;
-  }
-): Promise<boolean>;
-export async function requestCandidateVerification(
-  action: "profile" | "interview",
-  payload: any
+  payload: VerificationRequestDTO
 ): Promise<boolean> {
   const form = new FormData();
-  form.append("action", action);
+
+  form.append("action", payload.action);
   form.append("subject", payload.subject);
   form.append("notes", payload.notes);
-  form.append("links", payload.links);
-  if (action === "interview") {
-    form.append("interviewProgressId", String(payload.interviewProgressId));
+  payload.files.forEach((f) => form.append("files", f));
+
+  if (payload.action === "interview") {
+    form.append("interviewProgressId", payload.interviewProgressId);
   }
-  payload.files.forEach((f: File) => form.append("files", f));
-  const res = await fetch("/api/verification/candidate", {
-    method: "POST",
-    body: form,
-  });
-  const json = await res.json();
-  return res.ok && json.success === true;
+
+  const res = await apiAdapter.post<VerificationResponseDTO>(
+    "/api/verification/candidate",
+    form
+  );
+
+  return res.ok && res.data?.success === true;
 }

@@ -15,20 +15,19 @@ async function getUserId(req: NextRequest): Promise<string> {
     {
       baseURL: req.nextUrl.origin,
       headers: { cookie: req.headers.get("cookie") || "" },
-    }
+    },
   );
   if (!session?.user?.id) throw new Error("Not authenticated");
   return session.user.id;
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const organisations = await db
     .select()
     .from(gfoPartnerOrganisationsTable)
     .orderBy(gfoPartnerOrganisationsTable.name);
   return NextResponse.json(organisations);
 }
-
 export async function POST(req: NextRequest) {
   let userId: string;
   try {
@@ -44,7 +43,7 @@ export async function POST(req: NextRequest) {
   if (!cand) {
     return NextResponse.json(
       { error: "Create your candidate profile before hiding organisations" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -62,7 +61,7 @@ export async function POST(req: NextRequest) {
         id: randomUUID(),
         candidateUserId: userId,
         organisationId: orgId,
-      }))
+      })),
     );
   }
 

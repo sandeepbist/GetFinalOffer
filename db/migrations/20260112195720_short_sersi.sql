@@ -1,0 +1,1 @@
+ALTER TABLE "gfo_candidates" ADD COLUMN "embedding" vector(1536);

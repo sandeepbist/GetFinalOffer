@@ -33,6 +33,7 @@ import type { CompanyDTO } from "./components/SingleCompanySelect";
 import type { SkillDTO } from "./components/SkillMultiSelect";
 import type { InterviewProgress } from "./components/InterviewProgressItem";
 import { VerificationStatus, VerifyCallout } from "./components/VerifyCallout";
+
 export default function CandidateDashboard({ user }: { user: TUserAuth }) {
   const router = useRouter();
   const { data: session, error } = authClient.useSession();
@@ -53,6 +54,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
   const [selSkills, setSelSkills] = useState<string[]>([]);
   const [partnerOrgs, setPartnerOrgs] = useState<PartnerOrganisationDTO[]>([]);
   const [hiddenOrgs, setHiddenOrgs] = useState<string[]>([]);
+
   useEffect(() => {
     if (error) {
       router.replace("/auth");
@@ -87,6 +89,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
         .finally(() => setLoading(false));
     }
   }, [session, error, router]);
+
   const toggleHidden = (orgId: string) => {
     setHiddenOrgs((prev) =>
       prev.includes(orgId)
@@ -103,7 +106,14 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
       toast.error("Could not save visibility settings");
     }
   };
+
   if (!session || loading) return null;
+
+  const isProfileComplete = !!(
+    profile &&
+    profile.professionalTitle &&
+    profile.location
+  );
 
   const entries: InterviewProgress[] =
     profile?.interviewProgress.map((e) => ({
@@ -162,6 +172,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
       toast.error(err.message || "Failed to update profile");
     }
   };
+
   const handleProfileVerify = async (data: {
     subject: string;
     notes: string;
@@ -180,6 +191,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
       toast.error(err.message || "Request failed");
     }
   };
+
   const completionFields = [
     profile?.professionalTitle,
     profile?.currentRole,
@@ -197,9 +209,10 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
     ) || [];
 
   return (
-    <main className="space-y-4 p-6">
+    <main className="max-w-7xl mx-auto space-y-6 px-6 py-8">
       <WelcomeBanner name={user.name} />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <ProfileCard
           name={user.name}
           email={user.email}
@@ -210,17 +223,21 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
           completion={completion}
           skills={skillNames}
           resumeUrl={profile?.resumeUrl}
+          isLocked={!isProfileComplete}
           onUpload={handleUpload}
           onEdit={() => setEditing(true)}
         />
+
         <div className="lg:col-span-2 space-y-6">
           <InterviewProgressManager
             interviewProgress={entries}
             availableCompanies={companies}
+            isLocked={!isProfileComplete}
             onSave={handleSaveProgress}
           />
         </div>
       </div>
+
       {profile && (
         <HideOrganisations
           partnerOrgs={partnerOrgs}
@@ -229,6 +246,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
           onSave={saveHidden}
         />
       )}
+
       {profile && (
         <VerifyCallout
           context="profile"
@@ -236,6 +254,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
           onSubmit={handleProfileVerify}
         />
       )}
+
       <Dialog open={editing} onOpenChange={setEditing}>
         <DialogContent className="max-w-lg">
           <ProfileProfessionalForm

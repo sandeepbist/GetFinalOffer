@@ -1,25 +1,34 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-
 import * as schema from "./schemas";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
-const POSTGRES_MIGRATING = process.env.POSTGRES_MIGRATING === "true";
-const POSTGRES_SEEDING = process.env.POSTGRES_SEEDING === "true";
-
 if (!DATABASE_URL) {
-  throw new Error("DATABASE_URL is not defined in the environment variables");
+  throw new Error("DATABASE_URL is not defined");
 }
 
+const globalQueryClient = global as unknown as { postgres: Pool };
+
 const createPool = () => {
-  console.log("Creating new pool");
-  return new Pool({
+  if (globalQueryClient.postgres) {
+    console.log("Using existing Postgres pool");
+    return globalQueryClient.postgres;
+  }
+
+  console.log("Creating new Postgres pool");
+  const newPool = new Pool({
     connectionString: DATABASE_URL,
-    max: POSTGRES_MIGRATING || POSTGRES_SEEDING ? 1 : 20,
-    idleTimeoutMillis: 10000,
-    connectionTimeoutMillis: 2000,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
   });
+
+  if (process.env.NODE_ENV !== "production") {
+    globalQueryClient.postgres = newPool;
+  }
+
+  return newPool;
 };
 
 const pool = createPool();

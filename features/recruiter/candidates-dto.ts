@@ -9,3 +9,7 @@ export interface CandidateSummaryDTO {
   matchHighlight?: string;
   matchScore?: number;
 }
+export interface CandidateSearchFilters {
+  minYears: number;
+  recruiterOrgId: string;
+}

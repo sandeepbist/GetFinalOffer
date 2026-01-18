@@ -10,15 +10,11 @@ import { eq, and, gte, isNull, desc, inArray } from "drizzle-orm";
 import { generateEmbedding } from "@/lib/ai";
 import { supabase } from "@/lib/supabase";
 import { SemanticCache } from "@/lib/semantic-cache";
-import type { CandidateSummaryDTO, CandidateSearchFilters } from "@/features/recruiter/candidates-dto";
+import type { CandidateSummaryDTO, CandidateSearchFilters, CandidateMatchResult, SearchResult } from "@/features/recruiter/candidates-dto";
 
-const THRESHOLD_STRICT = 0.5;
-const THRESHOLD_LOOSE = 0.25;
-
-interface SearchResult {
-    data: CandidateSummaryDTO[];
-    total: number;
-}
+const THRESHOLD_STRICT = 0.32;
+const THRESHOLD_LOOSE = 0.10;
+const RECALL_POOL_SIZE = 50;
 
 export async function searchCandidatesHybrid(
     query: string,
@@ -42,6 +38,7 @@ export async function searchCandidatesHybrid(
     const matchScores: Record<string, number> = {};
     const matchHighlights: Record<string, string> = {};
     let queryVector: number[] | undefined;
+
     try {
         queryVector = await generateEmbedding(query);
 
@@ -49,44 +46,61 @@ export async function searchCandidatesHybrid(
         if (semanticCached) {
             return { data: semanticCached.candidates, total: semanticCached.total };
         }
+
         const runSearch = async (threshold: number) => {
             return await supabase.rpc("match_candidates_hybrid", {
                 query_embedding: queryVector,
                 query_text: query,
                 match_threshold: threshold,
-                match_count: pageSize * 2,
+                match_count: RECALL_POOL_SIZE,
                 min_experience: filters.minYears,
                 blocked_org_ids: [filters.recruiterOrgId],
             });
         };
 
-        let response = await runSearch(THRESHOLD_STRICT);
+        const response = await runSearch(THRESHOLD_STRICT);
+        let rawMatches = (response.data || []) as CandidateMatchResult[];
 
-        if (!response.data || (Array.isArray(response.data) && response.data.length === 0)) {
-            response = await runSearch(THRESHOLD_LOOSE);
+        if (rawMatches.length < 5) {
+            const looseResponse = await runSearch(THRESHOLD_LOOSE);
+            const looseMatches = (looseResponse.data || []) as CandidateMatchResult[];
+
+            const existingIds = new Set(rawMatches.map((x) => x.candidate_id));
+            const newMatches = looseMatches.filter(
+                (x) => !existingIds.has(x.candidate_id)
+            );
+
+            rawMatches = [...rawMatches, ...newMatches];
         }
 
-        if (response.data) {
-            const matches = response.data as { candidate_id: string; match_score: number; match_content: string }[];
-            candidateIds = matches.map((m) => m.candidate_id);
-            matches.forEach((m) => {
-                matchScores[m.candidate_id] = m.match_score;
-                matchHighlights[m.candidate_id] = m.match_content;
-            });
+        const totalMatches = rawMatches.length;
+
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+
+        const pagedMatches = rawMatches.slice(startIndex, endIndex);
+
+        candidateIds = pagedMatches.map((m) => m.candidate_id);
+        pagedMatches.forEach((m) => {
+            matchScores[m.candidate_id] = m.match_score;
+            matchHighlights[m.candidate_id] = m.match_content;
+        });
+
+        const result = await hydrateCandidates(candidateIds, page, pageSize, matchScores, matchHighlights);
+
+        const finalResult = { data: result.data, total: totalMatches };
+
+        if (page === 1 && finalResult.data.length > 0) {
+            SemanticCache.set(query, filters, finalResult, queryVector)
+                .catch(err => console.error("Cache Write Error", err));
         }
+
+        return finalResult;
 
     } catch (error) {
         console.error("Vector Search Failed", error);
-        candidateIds = [];
+        return { data: [], total: 0 };
     }
-
-    const result = await hydrateCandidates(candidateIds, page, pageSize, matchScores, matchHighlights);
-
-    if (page === 1 && result.data.length > 0) {
-        SemanticCache.set(query, filters, result, queryVector)
-            .catch(err => console.error("Cache Write Error", err));
-    }
-    return result;
 }
 
 async function getBrowseResults(
@@ -133,6 +147,7 @@ async function hydrateCandidates(
         .select({
             id: gfoUserTable.id,
             name: gfoUserTable.name,
+            image: gfoUserTable.image,
             title: gfoCandidatesTable.professionalTitle,
             location: gfoCandidatesTable.location,
             yearsExperience: gfoCandidatesTable.yearsExperience,
@@ -167,6 +182,7 @@ async function hydrateCandidates(
     const results: CandidateSummaryDTO[] = rows.map((r) => ({
         id: r.id,
         name: r.name,
+        image: r.image,
         title: r.title ?? "Untitled",
         location: r.location,
         yearsExperience: r.yearsExperience,

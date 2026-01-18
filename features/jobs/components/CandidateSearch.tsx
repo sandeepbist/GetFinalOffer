@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,7 +23,15 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Filter, Check, Eye, Loader2, Sparkles } from "lucide-react";
+import {
+  Filter,
+  Check,
+  Eye,
+  Loader2,
+  Sparkles,
+  AlertTriangle,
+  Info
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { CandidateProfileModal } from "@/features/contacts/components/CandidateProfileModal";
@@ -34,6 +42,30 @@ import type { CandidateSummaryDTO } from "@/features/recruiter/candidates-dto";
 import { getAllCompanies } from "@/features/candidate/candidate-use-cases";
 
 import { trackSearch, trackCandidateClick } from "@/features/analytics/analytics-use-cases";
+
+function ConfidenceBadge({ score }: { score: number }) {
+  if (!score) return null;
+
+  if (score > 0.7) {
+    return (
+      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1 ml-2">
+        <Sparkles className="w-3 h-3" />
+        {Math.round(score * 100)}% Match
+      </Badge>
+    );
+  }
+
+  if (score < 0.3) {
+    return (
+      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 gap-1 ml-2">
+        <AlertTriangle className="w-3 h-3" />
+        Broad Match ({Math.round(score * 100)}%)
+      </Badge>
+    );
+  }
+
+  return null;
+}
 
 function MatchHighlight({ text, query }: { text?: string; query?: string }) {
   if (!text) return null;
@@ -54,7 +86,7 @@ function MatchHighlight({ text, query }: { text?: string; query?: string }) {
             <Sparkles className="w-3 h-3" /> AI Context Match
           </h4>
           <div className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-md border border-slate-100 italic">
-            "...
+            &quot;...
             {parts.map((part, i) =>
               part.toLowerCase() === query?.toLowerCase() ? (
                 <span
@@ -67,7 +99,7 @@ function MatchHighlight({ text, query }: { text?: string; query?: string }) {
                 part
               )
             )}
-            ..."
+            ...&quot;
           </div>
         </div>
       </PopoverContent>
@@ -108,17 +140,17 @@ export default function CandidateSearch() {
         setTotal(total);
 
         if (session?.user?.id) {
-           const duration = Math.round(performance.now() - startTime);
+          const duration = Math.round(performance.now() - startTime);
 
-           trackSearch(session.user.id, {
-             query: debouncedSearch || "*",
-             resultsCount: total,
-             executionTimeMs: duration,
-             filters: {
-               minYears: yearsFilter ?? undefined,
-               location: undefined,
-             }
-           });
+          trackSearch(session.user.id, {
+            query: debouncedSearch || "*",
+            resultsCount: total,
+            executionTimeMs: duration,
+            filters: {
+              minYears: yearsFilter ?? undefined,
+              location: undefined,
+            }
+          });
         }
       })
       .finally(() => {
@@ -148,7 +180,7 @@ export default function CandidateSearch() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-         <div className="relative flex-1 min-w-[300px]">
+        <div className="relative flex-1 min-w-[300px]">
           <Input
             placeholder="Search by role, skills, or specific experience..."
             value={search}
@@ -164,7 +196,7 @@ export default function CandidateSearch() {
             </div>
           )}
         </div>
-         <Popover>
+        <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -183,69 +215,69 @@ export default function CandidateSearch() {
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-72 p-2">
-             <Accordion type="multiple" className="space-y-2">
-               <AccordionItem value="years" className="border-none">
-                  <AccordionTrigger className="hover:no-underline py-2 px-3 hover:bg-slate-50 rounded-md">
-                    Experience
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <Command>
-                      <CommandInput placeholder="Minimum years..." />
-                      <CommandList className="max-h-40 overflow-auto">
-                        {yearsOptions.map((y) => {
-                          const sel = y === yearsFilter;
-                          return (
-                            <CommandItem
-                              key={y}
-                              onSelect={() => {
-                                setYearsFilter(sel ? null : y);
-                                setPage(1);
-                              }}
-                            >
-                              <Check className={`mr-2 h-4 w-4 ${sel ? "opacity-100" : "opacity-0"}`} />
-                              {y}+ years
-                            </CommandItem>
-                          );
-                        })}
-                      </CommandList>
-                    </Command>
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="company" className="border-none">
-                  <AccordionTrigger className="hover:no-underline py-2 px-3 hover:bg-slate-50 rounded-md">
-                    Company
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <Command>
-                      <CommandInput placeholder="Filter by company..." />
-                      <CommandList className="max-h-40 overflow-auto">
-                        {availableCompanies.map((co) => {
-                          const sel = co === companyFilter;
-                          return (
-                            <CommandItem
-                              key={co}
-                              onSelect={() => {
-                                setCompanyFilter(sel ? null : co);
-                                setPage(1);
-                              }}
-                            >
-                              <Check className={`mr-2 h-4 w-4 ${sel ? "opacity-100" : "opacity-0"}`} />
-                              {co}
-                            </CommandItem>
-                          );
-                        })}
-                      </CommandList>
-                    </Command>
-                  </AccordionContent>
-                </AccordionItem>
-             </Accordion>
+            <Accordion type="multiple" className="space-y-2">
+              <AccordionItem value="years" className="border-none">
+                <AccordionTrigger className="hover:no-underline py-2 px-3 hover:bg-slate-50 rounded-md">
+                  Experience
+                </AccordionTrigger>
+                <AccordionContent>
+                  <Command>
+                    <CommandInput placeholder="Minimum years..." />
+                    <CommandList className="max-h-40 overflow-auto">
+                      {yearsOptions.map((y) => {
+                        const sel = y === yearsFilter;
+                        return (
+                          <CommandItem
+                            key={y}
+                            onSelect={() => {
+                              setYearsFilter(sel ? null : y);
+                              setPage(1);
+                            }}
+                          >
+                            <Check className={`mr-2 h-4 w-4 ${sel ? "opacity-100" : "opacity-0"}`} />
+                            {y}+ years
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandList>
+                  </Command>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="company" className="border-none">
+                <AccordionTrigger className="hover:no-underline py-2 px-3 hover:bg-slate-50 rounded-md">
+                  Company
+                </AccordionTrigger>
+                <AccordionContent>
+                  <Command>
+                    <CommandInput placeholder="Filter by company..." />
+                    <CommandList className="max-h-40 overflow-auto">
+                      {availableCompanies.map((co) => {
+                        const sel = co === companyFilter;
+                        return (
+                          <CommandItem
+                            key={co}
+                            onSelect={() => {
+                              setCompanyFilter(sel ? null : co);
+                              setPage(1);
+                            }}
+                          >
+                            <Check className={`mr-2 h-4 w-4 ${sel ? "opacity-100" : "opacity-0"}`} />
+                            {co}
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandList>
+                  </Command>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </PopoverContent>
         </Popover>
       </div>
 
       <div className="space-y-4">
         {loading && candidates.length === 0 ? (
-           Array.from({ length: skeletonCount }).map((_, idx) => (
+          Array.from({ length: skeletonCount }).map((_, idx) => (
             <Card key={idx} className="border-slate-100 shadow-sm">
               <CardContent className="flex items-center gap-4 p-5">
                 <Skeleton className="h-14 w-14 rounded-full" />
@@ -270,20 +302,22 @@ export default function CandidateSearch() {
               <CardContent className="flex items-start justify-between p-5">
                 <div className="flex items-start gap-5">
                   <Avatar className="h-14 w-14 border border-slate-100">
-                    <AvatarImage src={`/avatar.jpg`} alt={c.name} />
+                    <AvatarImage src={c.image || `/avatar.jpg`} alt={c.name} />
                     <AvatarFallback className="bg-blue-50 text-blue-700 font-semibold">
                       {c.name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="space-y-1.5">
-                    <div>
+                    <div className="flex items-center gap-2">
                       <h3 className="text-lg font-bold text-slate-900 leading-tight">
                         {c.name}
                       </h3>
-                      <p className="text-sm font-medium text-slate-600">
-                        {c.title || "Candidate"}
-                      </p>
+                      <ConfidenceBadge score={c.matchScore || 0} />
                     </div>
+
+                    <p className="text-sm font-medium text-slate-600">
+                      {c.title || "Candidate"}
+                    </p>
 
                     <p className="text-sm text-slate-500 flex items-center gap-2">
                       <span>{c.location}</span>
@@ -308,6 +342,16 @@ export default function CandidateSearch() {
                       )}
                     </div>
 
+                    {c.matchScore && c.matchScore < 0.3 && (
+                      <div className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-100 flex items-start gap-2">
+                        <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                        <p>
+                          We couldn&apos;t find an exact keyword match, so we included candidates with
+                          related concepts (Semantic Fallback).
+                        </p>
+                      </div>
+                    )}
+
                     {c.matchHighlight && (
                       <MatchHighlight text={c.matchHighlight} query={search} />
                     )}
@@ -320,14 +364,14 @@ export default function CandidateSearch() {
                     size="sm"
                     className="whitespace-nowrap font-medium text-blue-700 bg-blue-50 border-blue-100 hover:bg-blue-100 hover:border-blue-200 hover:text-blue-800"
                     onClick={() => {
-                        setSelected(c.id);
+                      setSelected(c.id);
 
-                        if (session?.user?.id) {
-                           trackCandidateClick(session.user.id, {
-                               candidateId: c.id,
-                               rankPosition: index + 1
-                           });
-                        }
+                      if (session?.user?.id) {
+                        trackCandidateClick(session.user.id, {
+                          candidateId: c.id,
+                          rankPosition: index + 1
+                        });
+                      }
                     }}
                   >
                     <Eye className="mr-2 h-4 w-4" />

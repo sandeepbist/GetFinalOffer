@@ -22,6 +22,10 @@ interface CachedSearchResult {
     timestamp: number;
 }
 
+interface VectorMetadata {
+    cacheKey: string;
+}
+
 export class SemanticCache {
     private static normalize(query: string): string {
         return query.trim().toLowerCase().replace(/[^\w\s]/gi, "").replace(/\s+/g, " ");
@@ -59,8 +63,12 @@ export class SemanticCache {
             });
 
             if (results.length > 0 && results[0].score >= SEMANTIC_THRESHOLD) {
-                // console.log(`Semantic Cache Hit! (Score: ${results[0].score})`);
-                return results[0].metadata as unknown as CachedSearchResult;
+                const metadata = results[0].metadata as unknown as VectorMetadata;
+
+                if (metadata && metadata.cacheKey) {
+                    console.log(`Semantic Cache Hit! (Score: ${results[0].score}) -> Fetching from Redis`);
+                    return await redis.get<CachedSearchResult>(metadata.cacheKey);
+                }
             }
 
             return null;
@@ -93,7 +101,7 @@ export class SemanticCache {
                 l2Promise = vectorIndex.upsert({
                     id: normalizedId,
                     vector: embedding,
-                    metadata: payload as unknown as Record<string, unknown>,
+                    metadata: { cacheKey: key },
                 }).then(() => { });
             }
 

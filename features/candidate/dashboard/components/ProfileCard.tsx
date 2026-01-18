@@ -33,10 +33,14 @@ export interface ProfileCardProps {
 const getFileName = (url: string) => {
   try {
     const basename = url.split("/").pop() || "";
+    if (basename.match(/[0-9a-f]{8}-[0-9a-f]{4}/i)) {
+      return "Resume.pdf";
+    }
     const parts = basename.split("-");
     if (parts.length > 1 && !isNaN(Number(parts[0]))) {
       return decodeURIComponent(parts.slice(1).join("-"));
     }
+
     return decodeURIComponent(basename);
   } catch {
     return "Resume.pdf";
@@ -198,11 +202,10 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                   <Button
                     variant={fileName ? "outline" : "default"}
                     size="sm"
-                    className={`w-full gap-2 ${
-                      !fileName
-                        ? "bg-blue-600 hover:bg-blue-700 text-white"
-                        : ""
-                    }`}
+                    className={`w-full gap-2 ${!fileName
+                      ? "bg-blue-600 hover:bg-blue-700 text-white"
+                      : ""
+                      }`}
                   >
                     {fileName ? <Pencil size={14} /> : <FileText size={14} />}
                     {fileName ? "Update Resume" : "Upload Resume"}

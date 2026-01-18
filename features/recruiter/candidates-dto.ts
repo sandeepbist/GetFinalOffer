@@ -2,6 +2,7 @@ export interface CandidateSummaryDTO {
   id: string;
   name: string;
   title: string;
+  image?: string | null;
   location: string;
   yearsExperience: number;
   skills: string[];
@@ -12,4 +13,14 @@ export interface CandidateSummaryDTO {
 export interface CandidateSearchFilters {
   minYears: number;
   recruiterOrgId: string;
+}
+export interface CandidateMatchResult {
+  candidate_id: string;
+  match_score: number;
+  match_content: string;
+}
+
+export interface SearchResult {
+  data: CandidateSummaryDTO[];
+  total: number;
 }

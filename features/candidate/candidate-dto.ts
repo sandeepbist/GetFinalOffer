@@ -20,6 +20,7 @@ export interface CreateCandidateProfileDTO {
   bio: string;
   verificationStatus: VerificationStatus;
   skillIds: string[];
+  skills: string[];
   interviewProgress: InterviewProgressEntryDTO[];
   resumeFile: File;
 }
@@ -41,6 +42,7 @@ export interface CandidateProfileSummaryDTO {
   bio: string;
   resumeUrl: string;
   skillIds: string[];
+  skills: string[];
   interviewProgress: InterviewProgressEntryDTO[];
   verificationStatus: VerificationStatus;
 }

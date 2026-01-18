@@ -95,10 +95,12 @@ export function CandidateProfileModal({ userId, open, onClose }: Props) {
 
         {full && (
           <>
-            {full.profile.skillIds.length > 0 && (
+            {full.profile.skills && full.profile.skills.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {full.profile.skillIds.map((sid) => (
-                  <Badge key={sid}>{sid}</Badge>
+                {full.profile.skills.map((skillName, index) => (
+                  <Badge key={index} variant="secondary">
+                    {skillName}
+                  </Badge>
                 ))}
               </div>
             )}

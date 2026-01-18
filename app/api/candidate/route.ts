@@ -6,6 +6,7 @@ import db from "@/db";
 import {
   gfoCandidatesTable,
   gfoCandidateSkillsTable,
+  gfoSkillsLibraryTable,
   gfoCandidateInterviewProgressTable,
 } from "@/db/schemas";
 import type {
@@ -79,8 +80,15 @@ export async function GET(req: NextRequest) {
   }
 
   const skillRows = await db
-    .select()
+    .select({
+      skillId: gfoCandidateSkillsTable.skillId,
+      name: gfoSkillsLibraryTable.name,
+    })
     .from(gfoCandidateSkillsTable)
+    .innerJoin(
+      gfoSkillsLibraryTable,
+      eq(gfoCandidateSkillsTable.skillId, gfoSkillsLibraryTable.id)
+    )
     .where(eq(gfoCandidateSkillsTable.candidateUserId, userId));
 
   const progressRows = await db
@@ -98,6 +106,7 @@ export async function GET(req: NextRequest) {
     verificationStatus: candidate.verificationStatus as VerificationStatus,
     resumeUrl: candidate.resumeUrl,
     skillIds: skillRows.map((r) => r.skillId),
+    skills: skillRows.map((r) => r.name),
     interviewProgress: progressRows.map((r) => ({
       id: r.id,
       companyId: r.companyId,

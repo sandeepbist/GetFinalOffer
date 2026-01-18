@@ -3,7 +3,7 @@ import { eq, sql } from "drizzle-orm";
 import db from "@/db";
 import {
   gfoCandidatesTable,
-  gfoCandidateSkillsTable,
+  gfoCandidateSkillsTable, gfoSkillsLibraryTable,
   gfoCandidateInterviewProgressTable,
   gfoUserTable,
 } from "@/db/schemas";
@@ -37,8 +37,15 @@ export async function GET(
   }
 
   const skillRows = await db
-    .select({ skillId: gfoCandidateSkillsTable.skillId })
+    .select({
+      skillId: gfoCandidateSkillsTable.skillId,
+      name: gfoSkillsLibraryTable.name
+    })
     .from(gfoCandidateSkillsTable)
+    .innerJoin(
+      gfoSkillsLibraryTable,
+      eq(gfoCandidateSkillsTable.skillId, gfoSkillsLibraryTable.id)
+    )
     .where(eq(gfoCandidateSkillsTable.candidateUserId, userId));
 
   const progressRows = await db
@@ -74,6 +81,7 @@ export async function GET(
     resumeUrl: cand.resumeUrl,
     verificationStatus: cand.verificationStatus as VerificationStatus,
     skillIds: skillRows.map((r) => r.skillId),
+    skills: skillRows.map((r) => r.name),
     interviewProgress: progressRows.map((r) => ({
       id: r.id,
       companyId: r.companyId,

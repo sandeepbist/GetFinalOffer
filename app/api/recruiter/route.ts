@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/db";
 import { gfoRecruitersTable } from "@/db/schemas";
+import { getCurrentUserId } from "@/lib/auth/current-user";
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, organisationId } = (await req.json()) as {
-      userId: string;
+    const userId = await getCurrentUserId();
+
+    const { organisationId } = (await req.json()) as {
       organisationId: string;
     };
 
-    if (!userId || !organisationId) {
+    if (!organisationId) {
       return NextResponse.json(
-        { success: false, error: "Missing userId or organisationId" },
+        { success: false, error: "Missing organisationId" },
         { status: 400 },
       );
     }
@@ -27,9 +29,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Error creating recruiter:", err);
-    const errorMessage = err instanceof Error ? err.message : "Unknown error";
+    if (err instanceof Error && err.message.includes("Unauthorized")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.json(
-      { success: false, error: errorMessage },
+      { success: false, error: "Internal Server Error" },
       { status: 500 },
     );
   }

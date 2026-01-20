@@ -10,7 +10,15 @@ import { eq, and, gte, isNull, desc, inArray } from "drizzle-orm";
 import { generateEmbedding } from "@/lib/ai";
 import { supabase } from "@/lib/supabase";
 import { SemanticCache } from "@/lib/semantic-cache";
-import type { CandidateSummaryDTO, CandidateSearchFilters, CandidateMatchResult, SearchResult } from "@/features/recruiter/candidates-dto";
+import { SearchEngine } from "@/lib/search-engine";
+import { StrategistAgent } from "@/lib/agents/strategist";
+import { EvaluatorAgent } from "@/lib/agents/evaluator";
+import type {
+    CandidateSummaryDTO,
+    CandidateSearchFilters,
+    CandidateMatchResult,
+    SearchResult
+} from "@/features/recruiter/candidates-dto";
 
 const THRESHOLD_STRICT = 0.32;
 const THRESHOLD_LOOSE = 0.10;
@@ -23,15 +31,37 @@ export async function searchCandidatesHybrid(
     filters: CandidateSearchFilters
 ): Promise<SearchResult> {
 
-    if (!query) {
-        return getBrowseResults(page, pageSize, filters);
+    if (page === 1) {
+        try {
+            const cached = await SemanticCache.findExact(query, filters);
+            if (cached) {
+                console.log("⚡ L1 Cache Hit");
+                return { data: cached.candidates, total: cached.total };
+            }
+        } catch (err) {
+            console.error("Cache Read Error", err);
+        }
     }
 
-    if (page === 1) {
-        const cached = await SemanticCache.findExact(query, filters);
-        if (cached) {
-            return { data: cached.candidates, total: cached.total };
+    try {
+        const liveResult = await SearchEngine.searchLive(query, filters, page, pageSize);
+
+        if (liveResult.total > 0) {
+            console.log(`⚡ Live Search Hit: Found ${liveResult.total} candidates`);
+            const hydrated = await hydrateCandidates(liveResult.ids, page, pageSize);
+
+            if (page === 1) {
+                SemanticCache.set(query, filters, hydrated).catch(console.error);
+            }
+            return { data: hydrated.data, total: liveResult.total };
         }
+
+        if (!query) {
+            return getBrowseResults(page, pageSize, filters);
+        }
+
+    } catch (e) {
+        console.warn("⚠️ Live Search Failed", e);
     }
 
     let candidateIds: string[] = [];
@@ -40,17 +70,27 @@ export async function searchCandidatesHybrid(
     let queryVector: number[] | undefined;
 
     try {
-        queryVector = await generateEmbedding(query);
+        const strategy = await StrategistAgent.analyzeQuery(query);
+        console.log("🧠 Search Strategy:", strategy);
+
+        queryVector = await generateEmbedding(strategy.semanticFocus);
 
         const semanticCached = await SemanticCache.findSemantic(queryVector);
         if (semanticCached) {
+            console.log("🧠 L2 Semantic Cache Hit");
             return { data: semanticCached.candidates, total: semanticCached.total };
         }
 
-        const runSearch = async (threshold: number) => {
+        const runSearch = async (threshold: number, forceVectorOnly: boolean = false) => {
+            const finalText = forceVectorOnly
+                ? ""
+                : strategy.expandedKeywords.map(k => `"${k}"`).join(" OR ");
+
+            if (forceVectorOnly) console.log("🛟 Attempting Semantic Rescue (Pure Vector)...");
+
             return await supabase.rpc("match_candidates_hybrid", {
                 query_embedding: queryVector,
-                query_text: query,
+                query_text: finalText,
                 match_threshold: threshold,
                 match_count: RECALL_POOL_SIZE,
                 min_experience: filters.minYears,
@@ -58,26 +98,18 @@ export async function searchCandidatesHybrid(
             });
         };
 
-        const response = await runSearch(THRESHOLD_STRICT);
+        const response = await runSearch(THRESHOLD_STRICT, false);
         let rawMatches = (response.data || []) as CandidateMatchResult[];
 
-        if (rawMatches.length < 5) {
-            const looseResponse = await runSearch(THRESHOLD_LOOSE);
-            const looseMatches = (looseResponse.data || []) as CandidateMatchResult[];
-
-            const existingIds = new Set(rawMatches.map((x) => x.candidate_id));
-            const newMatches = looseMatches.filter(
-                (x) => !existingIds.has(x.candidate_id)
-            );
-
-            rawMatches = [...rawMatches, ...newMatches];
+        if (rawMatches.length === 0) {
+            console.log("⚠️ Text Match Failed. Falling back to Vector meaning.");
+            const looseResponse = await runSearch(THRESHOLD_LOOSE, true);
+            rawMatches = (looseResponse.data || []) as CandidateMatchResult[];
         }
 
         const totalMatches = rawMatches.length;
-
         const startIndex = (page - 1) * pageSize;
         const endIndex = startIndex + pageSize;
-
         const pagedMatches = rawMatches.slice(startIndex, endIndex);
 
         candidateIds = pagedMatches.map((m) => m.candidate_id);
@@ -87,8 +119,14 @@ export async function searchCandidatesHybrid(
         });
 
         const result = await hydrateCandidates(candidateIds, page, pageSize, matchScores, matchHighlights);
+        let finalCandidates = result.data;
 
-        const finalResult = { data: result.data, total: totalMatches };
+        if (strategy.seniorityLevel !== "Any" && finalCandidates.length > 0) {
+            console.log("🕵️‍♀️ Running AI Evaluation...");
+            finalCandidates = await EvaluatorAgent.evaluateCandidates(query, finalCandidates);
+        }
+
+        const finalResult = { data: finalCandidates, total: totalMatches };
 
         if (page === 1 && finalResult.data.length > 0) {
             SemanticCache.set(query, filters, finalResult, queryVector)
@@ -151,11 +189,11 @@ async function hydrateCandidates(
             title: gfoCandidatesTable.professionalTitle,
             location: gfoCandidatesTable.location,
             yearsExperience: gfoCandidatesTable.yearsExperience,
+            bio: gfoCandidatesTable.bio,
         })
         .from(gfoUserTable)
         .innerJoin(gfoCandidatesTable, eq(gfoCandidatesTable.userId, gfoUserTable.id))
         .where(inArray(gfoCandidatesTable.userId, candidateIds));
-
 
     const userIds = rows.map((r) => r.id);
     const skillsMap: Record<string, string[]> = {};
@@ -188,8 +226,10 @@ async function hydrateCandidates(
         yearsExperience: r.yearsExperience,
         skills: skillsMap[r.id] || [],
         companyCleared: null,
+        bio: r.bio,
         matchHighlight: matchHighlights[r.id],
         matchScore: matchScores[r.id],
+        aiReasoning: undefined
     }));
 
     if (Object.keys(matchScores).length > 0) {

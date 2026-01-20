@@ -72,7 +72,7 @@ export const broadcasterWorker = new Worker<VectorizerOutput>(
     {
         connection: redis as unknown as ConnectionOptions,
         concurrency: 1,
-        drainDelay: 60000,
+        drainDelay: 10 * 60 * 1000,
         skipStalledCheck: true
     }
 );

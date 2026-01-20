@@ -124,6 +124,7 @@ export const extractorWorker = new Worker<IngestionJobPayload, ExtractorOutput>(
     },
     {
         connection: redis as unknown as ConnectionOptions,
-        concurrency: 5,
+        concurrency: 1, drainDelay: 60000,
+        skipStalledCheck: true
     }
 );

@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { createCircuitBreaker } from "./resilience"; //
+import { createCircuitBreaker } from "./resilience";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,

@@ -18,6 +18,7 @@ import { VerificationStatus } from "@/features/candidate/dashboard/components/Ve
 import type { Session } from "@/lib/auth/auth-types";
 import { supabase } from "@/lib/supabase";
 import { resumeQueue } from "@/lib/queue";
+import { queueProfileSync } from "@/lib/sync-buffer";
 
 export const config = { api: { bodyParser: false } };
 
@@ -55,7 +56,7 @@ async function handleResumeUpload(userId: string, file: File, bio: string) {
 
   await resumeQueue.add("process-resume", {
     userId,
-    fileUrl: resumeUrl,
+    resumeUrl: resumeUrl,
     bio,
   });
 
@@ -179,6 +180,7 @@ export async function POST(req: NextRequest) {
         }))
       );
     }
+    queueProfileSync(userId).catch(console.error);
 
     return NextResponse.json({
       success: true,
@@ -228,7 +230,6 @@ export async function PATCH(req: NextRequest) {
         .update(gfoCandidatesTable)
         .set({ resumeUrl })
         .where(eq(gfoCandidatesTable.userId, userId));
-
       return NextResponse.json({ success: true, resumeUrl });
     } catch (e) {
       const message = e instanceof Error ? e.message : "Upload failed";
@@ -284,6 +285,9 @@ export async function PATCH(req: NextRequest) {
         });
       }
     }
+
+    queueProfileSync(userId).catch(console.error);
+
     return NextResponse.json({ success: true });
   }
 }
@@ -337,6 +341,9 @@ export async function PUT(req: NextRequest) {
       }))
     );
   }
+
+
+  queueProfileSync(userId).catch(console.error);
 
   return NextResponse.json({ success: true });
 }

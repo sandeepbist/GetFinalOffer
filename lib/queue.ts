@@ -43,9 +43,8 @@ export const createWorker = (name: string, processor: Processor, concurrency = 1
     connection,
     concurrency,
     lockDuration: 5 * 60 * 1000,
-    stalledInterval: 5 * 60 * 1000,
     drainDelay: 60 * 1000,
-    skipStalledCheck: false,
-    maxStalledCount: 1
+    skipStalledCheck: true,
+    maxStalledCount: 0,
   });
 };

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
 import { Toaster } from "@/components/ui/sonner";
+import { getCurrentSession } from "@/lib/auth/current-user";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,11 +20,14 @@ export const metadata: Metadata = {
   description: "Land your dream job with confidence",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+
+  await getCurrentSession();
+
   return (
     <html lang="en" className="scroll-smooth">
       <body

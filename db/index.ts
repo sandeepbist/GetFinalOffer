@@ -8,25 +8,26 @@ if (!DATABASE_URL) {
   throw new Error("DATABASE_URL is not defined");
 }
 
-const globalQueryClient = global as unknown as { postgres: Pool };
+const globalQueryClient = globalThis as unknown as { postgres: Pool };
 
 const createPool = () => {
   if (globalQueryClient.postgres) {
-    console.log("Using existing Postgres pool");
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Using existing Postgres pool");
+    }
     return globalQueryClient.postgres;
   }
 
   console.log("Creating new Postgres pool");
+
   const newPool = new Pool({
     connectionString: DATABASE_URL,
-    max: 20,
+    max: process.env.DB_MAX_CONNECTIONS ? parseInt(process.env.DB_MAX_CONNECTIONS) : 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
   });
 
-  if (process.env.NODE_ENV !== "production") {
-    globalQueryClient.postgres = newPool;
-  }
+  globalQueryClient.postgres = newPool;
 
   return newPool;
 };

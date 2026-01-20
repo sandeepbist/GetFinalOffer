@@ -34,6 +34,50 @@ import type { SkillDTO } from "./components/SkillMultiSelect";
 import type { InterviewProgress } from "./components/InterviewProgressItem";
 import { VerificationStatus, VerifyCallout } from "./components/VerifyCallout";
 
+import { Skeleton } from "@/components/ui/skeleton";
+
+function DashboardSkeleton() {
+  return (
+    <main className="max-w-7xl mx-auto space-y-6 px-6 py-8">
+      <div className="space-y-2">
+        <Skeleton className="h-10 w-64 bg-slate-200" />
+        <Skeleton className="h-5 w-48 bg-slate-100" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-6 h-fit">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-20 w-20 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </div>
+          <div className="space-y-3 pt-4">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-5/6" />
+          </div>
+          <Skeleton className="h-10 w-full rounded-md mt-4" />
+        </div>
+
+        <div className="lg:col-span-2 space-y-6">
+          <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
+            <div className="flex justify-between">
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-9 w-32" />
+            </div>
+            <div className="space-y-4 pt-4">
+              <Skeleton className="h-24 w-full rounded-lg" />
+              <Skeleton className="h-24 w-full rounded-lg" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
 export default function CandidateDashboard({ user }: { user: TUserAuth }) {
   const router = useRouter();
   const { data: session, error } = authClient.useSession();
@@ -64,6 +108,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
       router.replace("/auth");
       return;
     }
+
     if (session?.user) {
       Promise.all([
         getCandidateProfile(),
@@ -111,8 +156,9 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
     }
   };
 
-  if (!session || loading) return null;
-
+  if (!session || loading) {
+    return <DashboardSkeleton />;
+  }
   const isProfileComplete = !!(
     profile &&
     profile.professionalTitle &&

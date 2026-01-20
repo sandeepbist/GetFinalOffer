@@ -7,7 +7,7 @@ import { SYNC_POOL_KEY } from "@/lib/sync-buffer";
 
 const BATCH_SIZE = 100;
 
-export const profileSyncProcessor = async (job: Job) => {
+export const profileSyncProcessor = async (job?: Job) => {
 
     const userIds = await redis.spop(SYNC_POOL_KEY, BATCH_SIZE);
 

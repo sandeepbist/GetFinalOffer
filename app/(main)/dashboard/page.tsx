@@ -1,25 +1,18 @@
-"use client";
-
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
 import CandidateDashboard from "@/features/candidate/dashboard/CandidateDashboard";
 import RecruiterDashboard from "@/features/recruiter/dashboard/RecruiterDashboard";
-import { authClient } from "@/lib/auth/auth-client";
+import { getCurrentSession } from "@/lib/auth/current-user";
 import type { TUserAuth } from "@/lib/auth/auth-types";
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const { data: session } = authClient.useSession();
+export default async function DashboardPage() {
+  const session = await getCurrentSession();
 
-  useEffect(() => {
-    if (!session?.user) {
-      router.replace("/auth");
-    }
-  }, [session, router]);
-
-  if (!session?.user) return null;
+  if (!session?.user) {
+    redirect("/auth");
+  }
 
   const user = session.user as TUserAuth;
+
   return user.role === "candidate" ? (
     <CandidateDashboard user={user} />
   ) : (

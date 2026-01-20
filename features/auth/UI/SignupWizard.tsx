@@ -6,6 +6,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BasicInfoStep } from "@/features/auth/Candidate/BasicInfoStep";
 import { signUp } from "@/lib/auth/auth-client";
+import { Loader2 } from "lucide-react";
 
 export const SignupWizard: React.FC = () => {
   const [fullName, setFullName] = useState("");
@@ -37,9 +38,7 @@ export const SignupWizard: React.FC = () => {
   return (
     <Card className="w-full rounded-xl border-0 shadow-none overflow-visible">
       <form onSubmit={handleSubmit}>
-        <CardContent className="p-8">
-          <h2 className="text-2xl mb-4 font-bold text-gray-800">Sign Up</h2>
-
+        <CardContent className="px-0 py-2">
           <BasicInfoStep
             formData={{ fullName, email, password }}
             onChange={(e) => {
@@ -51,13 +50,24 @@ export const SignupWizard: React.FC = () => {
           />
         </CardContent>
 
-        <CardFooter className="flex justify-end mb-4">
+        <CardFooter className="flex flex-col gap-4 px-0 pt-4">
           <Button
             type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold h-10 shadow-lg shadow-blue-500/20"
             disabled={loading || !fullName || !email || !password}
           >
-            {loading ? "Signing Up…" : "Create Account"}
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating Account...
+              </>
+            ) : (
+              "Get Started"
+            )}
           </Button>
+          <p className="text-xs text-center text-slate-500">
+            By clicking continue, you agree to our Terms of Service and Privacy Policy.
+          </p>
         </CardFooter>
       </form>
     </Card>

@@ -7,6 +7,7 @@ import { authClient, signOut } from "@/lib/auth/auth-client";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function Header() {
   const router = useRouter();
@@ -56,46 +57,31 @@ export function Header() {
 
         <nav className="flex items-center gap-6">
           {isPending ? (
-            <div className="w-24 h-8" />
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-4 w-20 bg-slate-200/50" />
+              <Skeleton className="h-9 w-24 rounded-full bg-slate-200/50" />
+            </div>
           ) : (
             <>
               {!isLoggedInView && (
                 <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
-                  <Link
-                    href="#how-it-works"
-                    className="hover:text-slate-900 transition-colors"
-                  >
+                  <Link href="#how-it-works" className="hover:text-slate-900 transition-colors">
                     How it Works
                   </Link>
-                  <Link
-                    href="#features"
-                    className="hover:text-slate-900 transition-colors"
-                  >
+                  <Link href="#features" className="hover:text-slate-900 transition-colors">
                     Features
-                  </Link>
-                  <Link
-                    href="#testimonials"
-                    className="hover:text-slate-900 transition-colors"
-                  >
-                    Stories
                   </Link>
                 </div>
               )}
 
               {!isLoggedInView ? (
                 <div className="flex items-center gap-3">
-                  <Link
-                    href="/auth"
-                    className="hidden sm:inline-flex text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors px-2"
-                  >
-                    Log in
-                  </Link>
                   <Button
                     asChild
                     size="sm"
                     className="rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 px-6 h-10 text-sm font-medium"
                   >
-                    <Link href="/auth">Start Verification</Link>
+                    <Link href="/auth">Sign Up</Link>
                   </Button>
                 </div>
               ) : (

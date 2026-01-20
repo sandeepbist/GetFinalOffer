@@ -56,7 +56,7 @@ async function scheduleSyncHeartbeat() {
         "batch-drain-pulse",
         {},
         {
-            repeat: { every: 5000 },
+            repeat: { every: 10 * 60 * 1000 },
             removeOnComplete: true
         }
     );

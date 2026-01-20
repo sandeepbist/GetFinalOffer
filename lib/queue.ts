@@ -44,7 +44,7 @@ export const createWorker = (name: string, processor: Processor, concurrency = 1
     concurrency,
     lockDuration: 60000,
     maxStalledCount: 0,
-    drainDelay: 5000,
+    drainDelay: 30000,
     skipStalledCheck: true,
   });
 };

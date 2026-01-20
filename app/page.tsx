@@ -105,37 +105,6 @@ function Hero() {
   );
 }
 
-function SocialProof() {
-  const logos = [
-    "Linear",
-    "Vercel",
-    "Stripe",
-    "Airbnb",
-    "Coinbase",
-    "OpenAI",
-    "Rippling",
-  ];
-  return (
-    <section className="py-12 border-y border-slate-100 bg-slate-50/50">
-      <div className="max-w-7xl mx-auto px-6 text-center">
-        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-8">
-          Trusted by Engineering Teams At
-        </p>
-        <div className="flex flex-wrap justify-center gap-x-12 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-          {logos.map((logo, i) => (
-            <span
-              key={i}
-              className="text-2xl font-bold text-slate-400 select-none"
-            >
-              {logo}
-            </span>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function Steps() {
   const steps = [
     {
@@ -455,7 +424,6 @@ export default function HomePage() {
   return (
     <main className="bg-white selection:bg-blue-100 selection:text-blue-900 min-h-screen">
       <Hero />
-      <SocialProof />
       <Steps />
       <BentoGrid />
       <Testimonials />

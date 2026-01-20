@@ -79,7 +79,7 @@ function ConfidenceBadge({ score }: { score: number }) {
     return (
       <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1 ml-2">
         <Sparkles className="w-3 h-3" />
-        {Math.round(score * 100)}% Match
+        {Math.round(score)}% Match
       </Badge>
     );
   }

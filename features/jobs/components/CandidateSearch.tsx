@@ -30,7 +30,8 @@ import {
   Loader2,
   Sparkles,
   AlertTriangle,
-  Info
+  Info,
+  Bot
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -42,6 +43,34 @@ import type { CandidateSummaryDTO } from "@/features/recruiter/candidates-dto";
 import { getAllCompanies } from "@/features/candidate/candidate-use-cases";
 
 import { trackSearch, trackCandidateClick } from "@/features/analytics/analytics-use-cases";
+
+function AIReasoningBadge({ reasoning }: { reasoning?: string }) {
+  if (!reasoning) return null;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button className="group inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold border border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300 transition-all ml-2 shadow-sm">
+          <Bot className="w-3.5 h-3.5 group-hover:text-indigo-600" />
+          <span>AI Insight</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-0 overflow-hidden shadow-xl border-indigo-100" align="start">
+        <div className="bg-gradient-to-r from-indigo-50 to-white px-4 py-3 border-b border-indigo-100 flex items-center gap-2">
+          <div className="p-1.5 bg-white rounded-md shadow-sm border border-indigo-50">
+            <Bot className="w-4 h-4 text-indigo-600" />
+          </div>
+          <h4 className="text-sm font-bold text-slate-700">Why this candidate?</h4>
+        </div>
+        <div className="p-4 bg-white">
+          <p className="text-sm text-slate-600 leading-relaxed">
+            {reasoning}
+          </p>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 function ConfidenceBadge({ score }: { score: number }) {
   if (!score) return null;
@@ -313,6 +342,7 @@ export default function CandidateSearch() {
                         {c.name}
                       </h3>
                       <ConfidenceBadge score={c.matchScore || 0} />
+                      <AIReasoningBadge reasoning={c.aiReasoning} />
                     </div>
 
                     <p className="text-sm font-medium text-slate-600">

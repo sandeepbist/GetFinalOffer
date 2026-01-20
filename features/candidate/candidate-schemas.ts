@@ -5,6 +5,10 @@ import {
   timestamp,
   index,
   vector,
+  boolean,
+  real,
+  jsonb,
+  pgEnum,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
@@ -14,6 +18,13 @@ import {
   gfoContactsTable,
   gfoPartnerOrganisationsTable,
 } from "../recruiter/recruiter-schemas";
+
+export const evidenceTypeEnum = pgEnum("evidence_type", [
+  "resume_section",
+  "project_description",
+  "github_code",
+  "interview_verified",
+]);
 
 export const gfoSkillsLibraryTable = pgTable("gfo_skills_library", {
   id: text("id")
@@ -46,6 +57,9 @@ export const gfoCandidatesTable = pgTable("gfo_candidates", {
   verificationStatus: text("verification_status")
     .default("unverified")
     .notNull(),
+
+  verifiedBoost: boolean("verified_boost").default(false).notNull(),
+
   verificationRequestedAt: timestamp("verification_requested_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -73,31 +87,6 @@ export const gfoCandidateResumeChunksTable = pgTable(
   ]
 );
 
-export const gfoCandidatesRelations = relations(
-  gfoCandidatesTable,
-  ({ one, many }) => ({
-    user: one(gfoUserTable, {
-      fields: [gfoCandidatesTable.userId],
-      references: [gfoUserTable.id],
-    }),
-    skills: many(gfoCandidateSkillsTable),
-    hiddenOrganisations: many(gfoCandidateHiddenOrganisationsTable),
-    interviewProgress: many(gfoCandidateInterviewProgressTable),
-    contacts: many(gfoContactsTable),
-    resumeChunks: many(gfoCandidateResumeChunksTable),
-  })
-);
-
-export const gfoCandidateResumeChunksRelations = relations(
-  gfoCandidateResumeChunksTable,
-  ({ one }) => ({
-    candidate: one(gfoCandidatesTable, {
-      fields: [gfoCandidateResumeChunksTable.candidateUserId],
-      references: [gfoCandidatesTable.userId],
-    }),
-  })
-);
-
 export const gfoCandidateSkillsTable = pgTable("gfo_candidate_skills", {
   id: text("id")
     .primaryKey()
@@ -112,19 +101,40 @@ export const gfoCandidateSkillsTable = pgTable("gfo_candidate_skills", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const gfoCandidateSkillsRelations = relations(
-  gfoCandidateSkillsTable,
-  ({ one }) => ({
-    candidate: one(gfoCandidatesTable, {
-      fields: [gfoCandidateSkillsTable.candidateUserId],
-      references: [gfoCandidatesTable.userId],
-    }),
-    skill: one(gfoSkillsLibraryTable, {
-      fields: [gfoCandidateSkillsTable.skillId],
-      references: [gfoSkillsLibraryTable.id],
-    }),
-  })
-);
+export const gfoSkillEvidenceTable = pgTable("gfo_skill_evidence", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  candidateSkillId: text("candidate_skill_id")
+    .notNull()
+    .references(() => gfoCandidateSkillsTable.id, { onDelete: "cascade" }),
+
+  confidenceScore: real("confidence_score").notNull(),
+  sourceContext: text("source_context").notNull(),
+  evidenceType: evidenceTypeEnum("evidence_type").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const gfoSearchQueryRegistryTable = pgTable("gfo_search_query_registry", {
+  queryHash: text("query_hash").primaryKey(),
+  rawQuery: text("raw_query").notNull(),
+  lastSearchedAt: timestamp("last_searched_at").defaultNow(),
+});
+
+export const gfoSearchInsightsTable = pgTable("gfo_search_insights", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  queryHash: text("query_hash")
+    .notNull()
+    .references(() => gfoSearchQueryRegistryTable.queryHash, { onDelete: "cascade" }),
+  candidateUserId: text("candidate_user_id")
+    .notNull()
+    .references(() => gfoCandidatesTable.userId, { onDelete: "cascade" }),
+  explanation: text("explanation"),
+  suggestedQuestions: jsonb("suggested_questions"),
+  isGolden: boolean("is_golden").default(false),
+
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("insight_lookup_idx").on(table.queryHash, table.candidateUserId),
+]);
 
 export const gfoCandidateHiddenOrganisationsTable = pgTable(
   "gfo_candidate_hidden_organisations",
@@ -143,20 +153,6 @@ export const gfoCandidateHiddenOrganisationsTable = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   }
-);
-
-export const gfoCandidateHiddenOrganisationsRelations = relations(
-  gfoCandidateHiddenOrganisationsTable,
-  ({ one }) => ({
-    candidate: one(gfoCandidatesTable, {
-      fields: [gfoCandidateHiddenOrganisationsTable.candidateUserId],
-      references: [gfoCandidatesTable.userId],
-    }),
-    organisation: one(gfoPartnerOrganisationsTable, {
-      fields: [gfoCandidateHiddenOrganisationsTable.organisationId],
-      references: [gfoPartnerOrganisationsTable.id],
-    }),
-  })
 );
 
 export const gfoCandidateInterviewProgressTable = pgTable(
@@ -185,21 +181,6 @@ export const gfoCandidateInterviewProgressTable = pgTable(
   }
 );
 
-export const gfoCandidateInterviewProgressRelations = relations(
-  gfoCandidateInterviewProgressTable,
-  ({ one, many }) => ({
-    candidate: one(gfoCandidatesTable, {
-      fields: [gfoCandidateInterviewProgressTable.candidateUserId],
-      references: [gfoCandidatesTable.userId],
-    }),
-    company: one(gfoCompaniesTable, {
-      fields: [gfoCandidateInterviewProgressTable.companyId],
-      references: [gfoCompaniesTable.id],
-    }),
-    documents: many(gfoInterviewDocumentsTable),
-  })
-);
-
 export const gfoInterviewDocumentsTable = pgTable("gfo_interview_documents", {
   id: text("id")
     .primaryKey()
@@ -216,12 +197,106 @@ export const gfoInterviewDocumentsTable = pgTable("gfo_interview_documents", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const gfoCandidatesRelations = relations(
+  gfoCandidatesTable,
+  ({ one, many }) => ({
+    user: one(gfoUserTable, {
+      fields: [gfoCandidatesTable.userId],
+      references: [gfoUserTable.id],
+    }),
+    skills: many(gfoCandidateSkillsTable),
+    hiddenOrganisations: many(gfoCandidateHiddenOrganisationsTable),
+    interviewProgress: many(gfoCandidateInterviewProgressTable),
+    contacts: many(gfoContactsTable),
+    resumeChunks: many(gfoCandidateResumeChunksTable),
+    searchInsights: many(gfoSearchInsightsTable),
+  })
+);
+
+export const gfoCandidateResumeChunksRelations = relations(
+  gfoCandidateResumeChunksTable,
+  ({ one }) => ({
+    candidate: one(gfoCandidatesTable, {
+      fields: [gfoCandidateResumeChunksTable.candidateUserId],
+      references: [gfoCandidatesTable.userId],
+    }),
+  })
+);
+
+export const gfoCandidateSkillsRelations = relations(
+  gfoCandidateSkillsTable,
+  ({ one, many }) => ({
+    candidate: one(gfoCandidatesTable, {
+      fields: [gfoCandidateSkillsTable.candidateUserId],
+      references: [gfoCandidatesTable.userId],
+    }),
+    skill: one(gfoSkillsLibraryTable, {
+      fields: [gfoCandidateSkillsTable.skillId],
+      references: [gfoSkillsLibraryTable.id],
+    }),
+    evidence: many(gfoSkillEvidenceTable),
+  })
+);
+
+export const gfoSkillEvidenceRelations = relations(
+  gfoSkillEvidenceTable,
+  ({ one }) => ({
+    parentSkill: one(gfoCandidateSkillsTable, {
+      fields: [gfoSkillEvidenceTable.candidateSkillId],
+      references: [gfoCandidateSkillsTable.id],
+    }),
+  })
+);
+
+export const gfoCandidateHiddenOrganisationsRelations = relations(
+  gfoCandidateHiddenOrganisationsTable,
+  ({ one }) => ({
+    candidate: one(gfoCandidatesTable, {
+      fields: [gfoCandidateHiddenOrganisationsTable.candidateUserId],
+      references: [gfoCandidatesTable.userId],
+    }),
+    organisation: one(gfoPartnerOrganisationsTable, {
+      fields: [gfoCandidateHiddenOrganisationsTable.organisationId],
+      references: [gfoPartnerOrganisationsTable.id],
+    }),
+  })
+);
+
+export const gfoCandidateInterviewProgressRelations = relations(
+  gfoCandidateInterviewProgressTable,
+  ({ one, many }) => ({
+    candidate: one(gfoCandidatesTable, {
+      fields: [gfoCandidateInterviewProgressTable.candidateUserId],
+      references: [gfoCandidatesTable.userId],
+    }),
+    company: one(gfoCompaniesTable, {
+      fields: [gfoCandidateInterviewProgressTable.companyId],
+      references: [gfoCompaniesTable.id],
+    }),
+    documents: many(gfoInterviewDocumentsTable),
+  })
+);
+
 export const gfoInterviewDocumentsRelations = relations(
   gfoInterviewDocumentsTable,
   ({ one }) => ({
     interviewProgress: one(gfoCandidateInterviewProgressTable, {
       fields: [gfoInterviewDocumentsTable.interviewProgressId],
       references: [gfoCandidateInterviewProgressTable.id],
+    }),
+  })
+);
+
+export const gfoSearchInsightsRelations = relations(
+  gfoSearchInsightsTable,
+  ({ one }) => ({
+    query: one(gfoSearchQueryRegistryTable, {
+      fields: [gfoSearchInsightsTable.queryHash],
+      references: [gfoSearchQueryRegistryTable.queryHash],
+    }),
+    candidate: one(gfoCandidatesTable, {
+      fields: [gfoSearchInsightsTable.candidateUserId],
+      references: [gfoCandidatesTable.userId],
     }),
   })
 );

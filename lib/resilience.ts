@@ -1,7 +1,7 @@
 import CircuitBreaker from "opossum";
 
 const BREAKER_OPTIONS = {
-    timeout: 10000,
+    timeout: 20000,
     errorThresholdPercentage: 50,
     resetTimeout: 30000,
 };

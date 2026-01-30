@@ -9,24 +9,11 @@ import {
   gfoCandidateInterviewProgressTable,
   gfoInterviewDocumentsTable,
 } from "@/db/schemas";
-import { betterFetch } from "@better-fetch/fetch";
-import type { Session } from "@/lib/auth/auth-types";
+import { getCurrentUserId } from "@/lib/auth/current-user";
 
 export const config = {
   api: { bodyParser: false },
 };
-
-async function getUserId(req: NextRequest): Promise<string> {
-  const { data: session } = await betterFetch<Session>(
-    "/api/auth/get-session",
-    {
-      baseURL: req.nextUrl.origin,
-      headers: { cookie: req.headers.get("cookie") || "" },
-    }
-  );
-  if (!session?.user?.id) throw new Error("Not authenticated");
-  return session.user.id;
-}
 
 export async function POST(req: NextRequest) {
   if (!req.headers.get("content-type")?.startsWith("multipart/form-data")) {
@@ -36,22 +23,22 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  let userId: string;
+  try {
+    userId = await getCurrentUserId();
+  } catch {
+    return NextResponse.json(
+      { success: false, error: "Authentication required" },
+      { status: 401 }
+    );
+  }
+
   const form = await req.formData();
   const action = form.get("action")?.toString();
   if (!action || (action !== "profile" && action !== "interview")) {
     return NextResponse.json(
       { success: false, error: "Invalid action" },
       { status: 400 }
-    );
-  }
-
-  let userId: string;
-  try {
-    userId = await getUserId(req);
-  } catch {
-    return NextResponse.json(
-      { success: false, error: "Authentication required" },
-      { status: 401 }
     );
   }
 

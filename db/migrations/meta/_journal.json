@@ -36,6 +36,13 @@
       "when": 1768853981815,
       "tag": "20260119201941_loud_master_chief",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1769110938546,
+      "tag": "20260122194218_free_sentry",
+      "breakpoints": true
     }
   ]
 }

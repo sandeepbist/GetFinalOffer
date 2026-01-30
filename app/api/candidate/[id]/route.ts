@@ -12,11 +12,18 @@ import type {
   CandidateProfileSummaryDTO,
 } from "@/features/candidate/candidate-dto";
 import { VerificationStatus } from "@/features/candidate/dashboard/components/VerifyCallout";
+import { getCurrentUserId } from "@/lib/auth/current-user";
 
 export async function GET(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  try {
+    await getCurrentUserId();
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id: userId } = await context.params;
 
   const [cand] = await db

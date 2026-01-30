@@ -95,7 +95,7 @@ export function Header() {
                     size="sm"
                     className="rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 px-6 h-10 text-sm font-medium"
                   >
-                    <Link href="/auth">Sign Up</Link>
+                    <Link href="/auth">Get Started</Link>
                   </Button>
                 </div>
               ) : (

@@ -70,6 +70,20 @@ export const gfoContactsTable = pgTable("gfo_contacts", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const gfoContactDetailsTable = pgTable("gfo_contact_details", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  contactId: text("contact_id")
+    .notNull()
+    .references(() => gfoContactsTable.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("pending"),
+
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const gfoContactsRelations = relations(gfoContactsTable, ({ one }) => ({
   recruiter: one(gfoRecruitersTable, {
     fields: [gfoContactsTable.recruiterUserId],
@@ -78,5 +92,16 @@ export const gfoContactsRelations = relations(gfoContactsTable, ({ one }) => ({
   candidate: one(gfoCandidatesTable, {
     fields: [gfoContactsTable.candidateUserId],
     references: [gfoCandidatesTable.userId],
+  }),
+  details: one(gfoContactDetailsTable, {
+    fields: [gfoContactsTable.id],
+    references: [gfoContactDetailsTable.contactId],
+  }),
+}));
+
+export const gfoContactDetailsRelations = relations(gfoContactDetailsTable, ({ one }) => ({
+  contact: one(gfoContactsTable, {
+    fields: [gfoContactDetailsTable.contactId],
+    references: [gfoContactsTable.id],
   }),
 }));

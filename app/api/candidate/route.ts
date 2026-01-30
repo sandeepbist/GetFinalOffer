@@ -13,30 +13,13 @@ import type {
   InterviewProgressEntryDTO,
   CandidateProfileSummaryDTO,
 } from "@/features/candidate/candidate-dto";
-import { betterFetch } from "@better-fetch/fetch";
 import { VerificationStatus } from "@/features/candidate/dashboard/components/VerifyCallout";
-import type { Session } from "@/lib/auth/auth-types";
 import { supabase } from "@/lib/supabase";
 import { resumeQueue } from "@/lib/queue";
 import { queueProfileSync } from "@/lib/sync-buffer";
+import { getCurrentUserId } from "@/lib/auth/current-user";
 
 export const config = { api: { bodyParser: false } };
-
-async function getUserId(req: NextRequest): Promise<string> {
-  const { data: session } = await betterFetch<Session>(
-    "/api/auth/get-session",
-    {
-      baseURL: req.nextUrl.origin,
-      headers: {
-        cookie: req.headers.get("cookie") || "",
-      },
-    }
-  );
-  if (!session?.user?.id) {
-    throw new Error("Not authenticated");
-  }
-  return session.user.id;
-}
 
 async function handleResumeUpload(userId: string, file: File, bio: string) {
   const filename = `${userId}-${Date.now()}-${file.name.replace(
@@ -63,10 +46,10 @@ async function handleResumeUpload(userId: string, file: File, bio: string) {
   return resumeUrl;
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   let userId: string;
   try {
-    userId = await getUserId(req);
+    userId = await getCurrentUserId();
   } catch {
     return NextResponse.json(null, { status: 401 });
   }
@@ -125,8 +108,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const verifiedUserId = await getCurrentUserId();
     const form = await req.formData();
-    const userId = form.get("userId")!.toString();
+    const userId = verifiedUserId;
     const professionalTitle = form.get("professionalTitle")!.toString();
     const currentRole = form.get("currentRole")!.toString();
     const yearsExperience = parseInt(
@@ -198,12 +182,9 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   let userId: string;
   try {
-    userId = await getUserId(req);
+    userId = await getCurrentUserId();
   } catch {
-    return NextResponse.json(
-      { success: false, error: "Not auth" },
-      { status: 401 }
-    );
+    return NextResponse.json(null, { status: 401 });
   }
 
   const contentType = req.headers.get("content-type") || "";
@@ -295,12 +276,9 @@ export async function PATCH(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   let userId: string;
   try {
-    userId = await getUserId(req);
+    userId = await getCurrentUserId();
   } catch {
-    return NextResponse.json(
-      { success: false, error: "Not authenticated" },
-      { status: 401 }
-    );
+    return NextResponse.json(null, { status: 401 });
   }
 
   const body = await req.json();

@@ -1,33 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { betterFetch } from "@better-fetch/fetch";
 import db from "@/db";
 import { gfoRecruitersTable } from "@/db/schemas";
 import { eq } from "drizzle-orm";
 import { searchLimiter } from "@/lib/limiter";
 import { searchCandidatesHybrid } from "@/features/recruiter/candidates-data-access";
+import { getCurrentUserId } from "@/lib/auth/current-user";
 
 export const dynamic = "force-dynamic";
 
-async function getUserId(req: NextRequest): Promise<string> {
-  const { data: session } = await betterFetch<{ user: { id: string } }>(
-    "/api/auth/get-session",
-    {
-      baseURL: req.nextUrl.origin,
-      headers: { cookie: req.headers.get("cookie") || "" },
-    }
-  );
-  if (!session?.user?.id) throw new Error("Not authenticated");
-  return session.user.id;
-}
 
 export async function GET(req: NextRequest) {
   let userId: string;
   try {
-    userId = await getUserId(req);
+    userId = await getCurrentUserId();
   } catch {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
-
   const { success, limit, reset, remaining } = await searchLimiter.limit(userId);
   if (!success) {
     return NextResponse.json(

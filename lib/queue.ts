@@ -42,9 +42,9 @@ export const createWorker = (name: string, processor: Processor, concurrency = 1
   return new Worker(name, processor, {
     connection,
     concurrency,
-    lockDuration: 60000,
-    maxStalledCount: 0,
-    drainDelay: 10 * 60 * 1000,
+    lockDuration: 5 * 60 * 1000,
+    drainDelay: 60 * 1000,
     skipStalledCheck: true,
+    maxStalledCount: 0,
   });
 };

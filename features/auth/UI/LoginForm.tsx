@@ -13,8 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import Link from "next/link";
-import { Lock, Mail } from "lucide-react";
+import { Lock, Mail, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { signIn } from "@/lib/auth/auth-client";
 
@@ -63,30 +62,24 @@ export function LoginForm() {
     }
   };
 
+  const isLoading = form.formState.isSubmitting;
+
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-6 px-8"
-        noValidate
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                <Mail className="h-4 w-4 text-gray-400" />
-                Email address
-              </FormLabel>
+              <FormLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</FormLabel>
               <FormControl>
-                <Input
-                  {...field}
-                  placeholder="you@example.com"
-                  className="text-base"
-                />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <Input {...field} placeholder="name@company.com" className="pl-9 bg-slate-50 border-slate-200 focus:bg-white transition-all" />
+                </div>
               </FormControl>
-              <FormMessage className="text-red-500 text-sm" />
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -96,51 +89,51 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                <Lock className="h-4 w-4 text-gray-400" />
-                Password
-              </FormLabel>
+              <div className="flex items-center justify-between">
+                <FormLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Password</FormLabel>
+              </div>
               <FormControl>
-                <Input
-                  {...field}
-                  type="password"
-                  placeholder="••••••••"
-                  className="text-base"
-                />
+                <div className="relative">
+                  <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <Input {...field} type="password" placeholder="••••••••" className="pl-9 bg-slate-50 border-slate-200 focus:bg-white transition-all" />
+                </div>
               </FormControl>
-              <FormMessage className="text-red-500 text-sm" />
+              <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="flex items-center justify-between">
-          <FormField
-            control={form.control}
-            name="remember"
-            render={({ field }) => (
-              <FormItem className="flex items-center space-x-2 space-y-0">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={(val) => field.onChange(!!val)}
-                  />
-                </FormControl>
-                <FormLabel className="text-sm font-normal text-gray-600">
-                  Remember me
-                </FormLabel>
-              </FormItem>
-            )}
-          />
-          <Link
-            href="/auth/forgot-password"
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Forgot password?
-          </Link>
-        </div>
+        <FormField
+          control={form.control}
+          name="remember"
+          render={({ field }) => (
+            <FormItem className="flex items-center space-x-2 space-y-0 py-2">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={(val) => field.onChange(!!val)}
+                />
+              </FormControl>
+              <FormLabel className="text-sm font-medium text-slate-600 cursor-pointer">
+                Remember me for 30 days
+              </FormLabel>
+            </FormItem>
+          )}
+        />
 
-        <Button type="submit" className="w-full mt-4 text-base font-semibold">
-          Sign In
+        <Button
+          type="submit"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold h-10 shadow-lg shadow-blue-500/20"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Signing In...
+            </>
+          ) : (
+            "Sign In"
+          )}
         </Button>
       </form>
     </Form>

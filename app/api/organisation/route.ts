@@ -7,19 +7,8 @@ import {
   gfoCandidateHiddenOrganisationsTable,
   gfoCandidatesTable,
 } from "@/db/schemas";
-import { betterFetch } from "@better-fetch/fetch";
+import { getCurrentUserId } from "@/lib/auth/current-user";
 
-async function getUserId(req: NextRequest): Promise<string> {
-  const { data: session } = await betterFetch<{ user: { id: string } }>(
-    "/api/auth/get-session",
-    {
-      baseURL: req.nextUrl.origin,
-      headers: { cookie: req.headers.get("cookie") || "" },
-    },
-  );
-  if (!session?.user?.id) throw new Error("Not authenticated");
-  return session.user.id;
-}
 
 export async function GET() {
   const organisations = await db
@@ -31,7 +20,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   let userId: string;
   try {
-    userId = await getUserId(req);
+    userId = await getCurrentUserId();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

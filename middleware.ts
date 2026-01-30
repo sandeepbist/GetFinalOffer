@@ -1,45 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
-import { betterFetch } from "@better-fetch/fetch";
-import { Session } from "@/lib/auth/auth-types";
 import {
   DEFAULT_LOGIN_REDIRECT,
-  publicRoutes,
   authRoutes,
   apiAuthPrefix,
   protectedRoutes,
 } from "@/routes";
 
 export async function middleware(request: NextRequest) {
-  const { data: session } = await betterFetch<Session>(
-    "/api/auth/get-session",
-    {
-      baseURL: request.nextUrl.origin,
-      headers: {
-        cookie: request.headers.get("cookie") || "",
-      },
-    }
-  );
-
-  const isLoggedIn = Boolean(session);
   const { nextUrl } = request;
 
+  const sessionToken =
+    request.cookies.get("better-auth.session_token")?.value ||
+    request.cookies.get("__Secure-better-auth.session_token")?.value;
+
+  const isLoggedIn = !!sessionToken;
+
   const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
-  const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
   const isAuthRoute = authRoutes.includes(nextUrl.pathname);
   const isProtectedRoute = protectedRoutes.some((route) =>
     nextUrl.pathname.startsWith(route)
   );
-  const isPublicAsset = /\.(png|jpg|jpeg|svg|ico|wav|mp3)$/.test(
+
+  const isPublicAsset = /\.(png|jpg|jpeg|svg|ico|wav|mp3|webp|css|js|woff|woff2|ttf)$/.test(
     nextUrl.pathname
   );
-
-  if (isPublicAsset) {
+  if (isPublicAsset || nextUrl.pathname.startsWith("/_next")) {
     return NextResponse.next();
   }
 
   if (isApiAuthRoute) {
     return NextResponse.next();
   }
+
 
   if (isAuthRoute) {
     if (isLoggedIn) {
@@ -52,13 +44,25 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/auth", nextUrl));
   }
 
-  if (isLoggedIn && (nextUrl.pathname === "/" || isPublicRoute)) {
+  if (isLoggedIn && nextUrl.pathname === "/") {
     return NextResponse.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl));
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+
+  if (isProtectedRoute || isAuthRoute) {
+    response.headers.set(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, proxy-revalidate"
+    );
+    response.headers.set("Pragma", "no-cache");
+    response.headers.set("Expires", "0");
+    response.headers.set("Surrogate-Control", "no-store");
+  }
+
+  return response;
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.png).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };

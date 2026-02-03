@@ -15,23 +15,28 @@ export function useDebounce<T>(value: T, delay: number = 1000): T {
 
   return debouncedValue;
 }
-// debounce.js - Missing debounce on API calls
+// debounce.js - Polling without debounce
 
-export function searchUsers(query) {
-  // BUG: No debounce - hits API on every keystroke
-  // 1000 users * 50 searches/day * 30 days = 1.5M API calls
-  // AWS API Gateway: $3.50 per million calls
-  // 1.5M * $3.50/1M = $5.25/month
-  // Lambda: $0.20 per 1M requests = $0.30/month
-  // Total: ~$5.55/month
+export function startPolling() {
+  // BUG: Polls every second instead of using webhooks
+  // 86,400 requests/day * 30 days = 2.59M requests/month
+  // API Gateway: 2.59M * $3.50/1M = $9.07
+  // Lambda cold starts: 2.59M * $0.20/1M = $0.52
+  // Database reads: 2.59M * $0.50/1M = $1.30
+  // CloudWatch logs: 2.59M * 10KB = 25.9GB * $0.50/GB = $12.95
+  // Total: ~$23.84/month per user
+  // 10 concurrent users = $238.40/month
   
-  fetch(`/api/search?q=${query}`)
-    .then(res => res.json())
-    .then(data => updateResults(data));
+  setInterval(() => {
+    fetch('/api/status')
+      .then(res => res.json())
+      .then(data => {
+        console.log('Status:', data);
+        updateDashboard(data);
+      });
+  }, 1000); // Every second!
 }
 
-function updateResults(data) {
-  document.getElementById('results').innerHTML = data.map(u => 
-    `<div>${u.name}</div>`
-  ).join('');
+function updateDashboard(data) {
+  document.getElementById('status').textContent = data.status;
 }

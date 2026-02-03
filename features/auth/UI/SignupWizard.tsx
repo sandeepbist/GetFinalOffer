@@ -1,12 +1,12 @@
 "use client";
 
 import React, { FormEvent, useState } from "react";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BasicInfoStep } from "@/features/auth/Candidate/BasicInfoStep";
+import { Input } from "@/components/ui/input";
 import { signUp } from "@/lib/auth/auth-client";
-import { Loader2 } from "lucide-react";
+import { Loader2, User, Mail, Lock } from "lucide-react";
 
 export const SignupWizard: React.FC = () => {
   const [fullName, setFullName] = useState("");
@@ -35,41 +35,103 @@ export const SignupWizard: React.FC = () => {
     toast.success("Check your email to complete signup");
   };
 
-  return (
-    <Card className="w-full rounded-xl border-0 shadow-none overflow-visible">
-      <form onSubmit={handleSubmit}>
-        <CardContent className="px-0 py-2">
-          <BasicInfoStep
-            formData={{ fullName, email, password }}
-            onChange={(e) => {
-              const { name, value } = e.target;
-              if (name === "fullName") setFullName(value);
-              else if (name === "email") setEmail(value);
-              else if (name === "password") setPassword(value);
-            }}
-          />
-        </CardContent>
+  const isValid = fullName.trim() && email.trim() && password.length >= 6;
 
-        <CardFooter className="flex flex-col gap-4 px-0 pt-4">
-          <Button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold h-10 shadow-lg shadow-blue-500/20"
-            disabled={loading || !fullName || !email || !password}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating Account...
-              </>
-            ) : (
-              "Get Started"
-            )}
-          </Button>
-          <p className="text-xs text-center text-slate-500">
-            By clicking continue, you agree to our Terms of Service and Privacy Policy.
-          </p>
-        </CardFooter>
-      </form>
-    </Card>
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0, duration: 0.3 }}
+      >
+        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+          Full Name
+        </label>
+        <div className="relative group">
+          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+          <Input
+            type="text"
+            name="fullName"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="John Doe"
+            className="pl-10 h-10 bg-slate-50/50 border-slate-200 focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all"
+          />
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.3 }}
+      >
+        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+          Email
+        </label>
+        <div className="relative group">
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+          <Input
+            type="email"
+            name="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="name@company.com"
+            className="pl-10 h-10 bg-slate-50/50 border-slate-200 focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all"
+          />
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.3 }}
+      >
+        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+          Password
+        </label>
+        <div className="relative group">
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+          <Input
+            type="password"
+            name="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Min. 6 characters"
+            className="pl-10 h-10 bg-slate-50/50 border-slate-200 focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all"
+          />
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.3 }}
+        className="pt-2"
+      >
+        <Button
+          type="submit"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold h-10 shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30"
+          disabled={loading || !isValid}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating Account...
+            </>
+          ) : (
+            "Get Started"
+          )}
+        </Button>
+      </motion.div>
+
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4, duration: 0.3 }}
+        className="text-xs text-center text-slate-500"
+      >
+        By clicking continue, you agree to our Terms of Service and Privacy Policy.
+      </motion.p>
+    </form>
   );
 };

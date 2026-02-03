@@ -15,28 +15,37 @@ export function useDebounce<T>(value: T, delay: number = 1000): T {
 
   return debouncedValue;
 }
-// debounce.js - Polling without debounce
+// debounce.js - Image upload without optimization
 
-export function startPolling() {
-  // BUG: Polls every second instead of using webhooks
-  // 86,400 requests/day * 30 days = 2.59M requests/month
-  // API Gateway: 2.59M * $3.50/1M = $9.07
-  // Lambda cold starts: 2.59M * $0.20/1M = $0.52
-  // Database reads: 2.59M * $0.50/1M = $1.30
-  // CloudWatch logs: 2.59M * 10KB = 25.9GB * $0.50/GB = $12.95
-  // Total: ~$23.84/month per user
-  // 10 concurrent users = $238.40/month
+export async function uploadUserAvatar(file) {
+  // BUG: Uploads full-resolution images (5MB each)
+  // instead of resizing to 200KB
+  // 
+  // 1000 users * 2 uploads/month = 2000 uploads
+  // S3 storage: 2000 * 5MB = 10GB * $0.023/GB = $0.23
+  // S3 PUT requests: 2000 * $0.005/1000 = $0.01
+  // CloudFront data transfer: 2000 * 5MB * 100 views = 1TB
+  // CloudFront: 1TB * $0.085/GB = $87
+  // Lambda image processing: 2000 * 30s * $0.0000166667/GB-second * 3GB = $3
+  // 
+  // Wait, the real cost is serving these images:
+  // 1000 users * 5MB avatar * 1000 profile views/month = 5TB
+  // CloudFront: 5TB * $0.085/GB = $435/month
+  // S3 storage: 5GB total * $0.023 = $0.12
+  // Total: ~$435/month
   
-  setInterval(() => {
-    fetch('/api/status')
-      .then(res => res.json())
-      .then(data => {
-        console.log('Status:', data);
-        updateDashboard(data);
-      });
-  }, 1000); // Every second!
+  const formData = new FormData();
+  formData.append('avatar', file); // Full 5MB file!
+  
+  const response = await fetch('/api/upload', {
+    method: 'POST',
+    body: formData
+  });
+  
+  return response.json();
 }
 
-function updateDashboard(data) {
-  document.getElementById('status').textContent = data.status;
-}
+// Should be:
+// - Resize to 200x200 (20KB)
+// - Use Next.js Image Optimization
+// - Lazy load images

@@ -15,37 +15,65 @@ export function useDebounce<T>(value: T, delay: number = 1000): T {
 
   return debouncedValue;
 }
-// debounce.js - Image upload without optimization
+// debounce.js - Infinite retry loop
 
-export async function uploadUserAvatar(file) {
-  // BUG: Uploads full-resolution images (5MB each)
-  // instead of resizing to 200KB
+export async function syncData() {
+  // BUG: Infinite retry on failure with no backoff
+  // If API is down, this creates a retry storm
+  //
+  // API down for 1 hour
+  // 100 users * 3600 retries/hour = 360,000 requests
+  // If this happens weekly: 360K * 4 = 1.44M extra requests/month
+  //
+  // Lambda invocations: 1.44M * $0.20/1M = $0.29
+  // API Gateway: 1.44M * $3.50/1M = $5.04
+  // DynamoDB writes (each retry writes): 1.44M * $1.25/1M = $1.80
   // 
-  // 1000 users * 2 uploads/month = 2000 uploads
-  // S3 storage: 2000 * 5MB = 10GB * $0.023/GB = $0.23
-  // S3 PUT requests: 2000 * $0.005/1000 = $0.01
-  // CloudFront data transfer: 2000 * 5MB * 100 views = 1TB
-  // CloudFront: 1TB * $0.085/GB = $87
-  // Lambda image processing: 2000 * 30s * $0.0000166667/GB-second * 3GB = $3
-  // 
-  // Wait, the real cost is serving these images:
-  // 1000 users * 5MB avatar * 1000 profile views/month = 5TB
-  // CloudFront: 5TB * $0.085/GB = $435/month
-  // S3 storage: 5GB total * $0.023 = $0.12
-  // Total: ~$435/month
+  // But the REAL issue: triggers downstream services
+  // - Each request triggers 3 microservices
+  // - Each microservice costs $0.0001/invocation
+  // - 1.44M * 3 * $0.0001 = $432/month in cascading costs
+  //
+  // CloudWatch logs from errors: 1.44M * 5KB = 7.2GB * $0.50/GB = $3.60
+  // SNS alerts: 1.44M * $0.50/1M = $0.72
+  //
+  // Total: ~$443/month in wasted costs
+  // If API is down 10% of the time: $443 * 2.4 = $1,063/month
+  //
+  // PLUS: Database connection pool exhaustion requires larger RDS instance
+  // Upgrade from db.t3.medium ($50/mo) to db.r5.large ($165/mo) = +$115/mo
+  //
+  // Grand Total: ~$1,178/month
   
-  const formData = new FormData();
-  formData.append('avatar', file); // Full 5MB file!
+  let retryCount = 0;
   
-  const response = await fetch('/api/upload', {
-    method: 'POST',
-    body: formData
-  });
-  
-  return response.json();
+  while (true) { // INFINITE LOOP!
+    try {
+      const response = await fetch('/api/sync', {
+        method: 'POST',
+        body: JSON.stringify({ data: getUserData() })
+      });
+      
+      if (response.ok) {
+        break;
+      }
+      
+      retryCount++;
+      console.log(`Retry ${retryCount}`);
+      // NO DELAY! Instant retry!
+      
+    } catch (error) {
+      console.error('Sync failed:', error);
+      // Keeps retrying forever!
+    }
+  }
 }
 
-// Should be:
-// - Resize to 200x200 (20KB)
-// - Use Next.js Image Optimization
-// - Lazy load images
+function getUserData() {
+  return {
+    userId: Math.random(),
+    timestamp: Date.now(),
+    // 50KB of data per request
+    largePayload: new Array(1000).fill('x').join('')
+  };
+}

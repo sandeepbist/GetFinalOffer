@@ -1,66 +1,59 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import db from "@/db";
 import { gfoRecruitersTable } from "@/db/schemas";
 import { eq } from "drizzle-orm";
 import { searchLimiter } from "@/lib/limiter";
 import { searchCandidatesHybrid } from "@/features/recruiter/candidates-data-access";
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { ApiErrors, successResponse } from "@/features/common/api/response";
+import { candidateSearchSchema, parseSearchParams } from "@/features/common/api/validation";
 
 export const dynamic = "force-dynamic";
-
 
 export async function GET(req: NextRequest) {
   let userId: string;
   try {
     userId = await getCurrentUserId();
   } catch {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    return ApiErrors.unauthorized();
   }
+
   const { success, limit, reset, remaining } = await searchLimiter.limit(userId);
   if (!success) {
-    return NextResponse.json(
-      { error: "Too many searches. Please wait a moment." },
-      {
-        status: 429,
-        headers: {
-          "X-RateLimit-Limit": limit.toString(),
-          "X-RateLimit-Remaining": remaining.toString(),
-          "X-RateLimit-Reset": reset.toString()
-        }
-      }
-    );
+    return ApiErrors.rateLimited(limit, remaining, reset);
   }
 
   try {
+    const parsed = parseSearchParams(req.nextUrl.searchParams, candidateSearchSchema);
+
+    if ("error" in parsed) {
+      const errors = parsed.error.issues.map((e) => ({
+        field: e.path.join("."),
+        message: e.message,
+      }));
+      return ApiErrors.validationError(errors);
+    }
+
+    const { search, minYears, page, pageSize } = parsed;
+
     const [recruiter] = await db
       .select({ organisationId: gfoRecruitersTable.organisationId })
       .from(gfoRecruitersTable)
       .where(eq(gfoRecruitersTable.userId, userId));
 
     if (!recruiter) {
-      return NextResponse.json({ message: "Not a recruiter" }, { status: 403 });
+      return ApiErrors.forbidden("Recruiter access required");
     }
 
-    const qp = req.nextUrl.searchParams;
-    const search = qp.get("search") || "";
-    const minYears = qp.get("minYears") ? parseInt(qp.get("minYears")!) : 0;
-    const page = parseInt(qp.get("page") || "1");
-    const pageSize = parseInt(qp.get("pageSize") || "10");
+    const result = await searchCandidatesHybrid(search, page, pageSize, {
+      minYears,
+      recruiterOrgId: recruiter.organisationId,
+    });
 
-    const result = await searchCandidatesHybrid(
-      search,
-      page,
-      pageSize,
-      { minYears, recruiterOrgId: recruiter.organisationId }
-    );
-
-    return NextResponse.json(result);
+    return successResponse(result);
 
   } catch (err) {
     console.error("Search Error:", err);
-    return NextResponse.json(
-      { message: "Search service unavailable", error: err instanceof Error ? err.message : "Unknown" },
-      { status: 500 }
-    );
+    return ApiErrors.serverError("Search service temporarily unavailable");
   }
 }

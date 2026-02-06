@@ -64,7 +64,7 @@ export function MagneticButton({
             onMouseLeave={handleMouseLeave}
             onClick={onClick}
             className={cn(
-                "relative overflow-hidden transition-shadow duration-300",
+                "relative overflow-hidden transition-shadow duration-300 cursor-pointer",
                 isHovered && "shadow-2xl",
                 className
             )}

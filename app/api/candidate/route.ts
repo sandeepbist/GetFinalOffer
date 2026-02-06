@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { eq, inArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -18,6 +17,8 @@ import { supabase } from "@/lib/supabase";
 import { resumeQueue } from "@/lib/queue";
 import { queueProfileSync } from "@/lib/sync-buffer";
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { ApiErrors, successResponse } from "@/features/common/api/response";
+import { validateFile } from "@/features/common/api/file-validation";
 
 export const config = { api: { bodyParser: false } };
 
@@ -51,7 +52,7 @@ export async function GET() {
   try {
     userId = await getCurrentUserId();
   } catch {
-    return NextResponse.json(null, { status: 401 });
+    return ApiErrors.unauthorized();
   }
 
   const [candidate] = await db
@@ -60,7 +61,7 @@ export async function GET() {
     .where(eq(gfoCandidatesTable.userId, userId));
 
   if (!candidate) {
-    return NextResponse.json(null, { status: 200 });
+    return successResponse(null);
   }
 
   const skillRows = await db
@@ -103,7 +104,7 @@ export async function GET() {
     })),
   };
 
-  return NextResponse.json(summary);
+  return successResponse(summary);
 }
 
 export async function POST(req: NextRequest) {
@@ -125,7 +126,14 @@ export async function POST(req: NextRequest) {
     ) as InterviewProgressEntryDTO[];
 
     const resumeFile = form.get("resume") as File;
-    if (!resumeFile) throw new Error("Resume required");
+    if (!resumeFile) {
+      return ApiErrors.badRequest("Resume file is required");
+    }
+
+    const fileValidation = await validateFile(resumeFile);
+    if (!fileValidation.valid) {
+      return ApiErrors.badRequest(fileValidation.error || "Invalid file");
+    }
 
     const resumeUrl = await handleResumeUpload(userId, resumeFile, bio);
 
@@ -166,16 +174,10 @@ export async function POST(req: NextRequest) {
     }
     queueProfileSync(userId).catch(console.error);
 
-    return NextResponse.json({
-      success: true,
-      message: "Profile created. Resume processing in background.",
-    });
+    return successResponse(undefined, "Profile created. Resume processing in background.");
   } catch (err) {
     console.error("POST Error:", err);
-    return NextResponse.json(
-      { success: false, error: err instanceof Error ? err.message : "Error" },
-      { status: 400 }
-    );
+    return ApiErrors.serverError("Failed to create profile");
   }
 }
 
@@ -184,7 +186,7 @@ export async function PATCH(req: NextRequest) {
   try {
     userId = await getCurrentUserId();
   } catch {
-    return NextResponse.json(null, { status: 401 });
+    return ApiErrors.unauthorized();
   }
 
   const contentType = req.headers.get("content-type") || "";
@@ -193,8 +195,14 @@ export async function PATCH(req: NextRequest) {
     try {
       const form = await req.formData();
       const resumeFile = form.get("resume") as File;
-      if (!resumeFile)
-        return NextResponse.json({ error: "No file" }, { status: 400 });
+      if (!resumeFile) {
+        return ApiErrors.badRequest("Resume file is required");
+      }
+
+      const fileValidation = await validateFile(resumeFile);
+      if (!fileValidation.valid) {
+        return ApiErrors.badRequest(fileValidation.error || "Invalid file");
+      }
 
       const [existing] = await db
         .select({ bio: gfoCandidatesTable.bio })
@@ -211,15 +219,15 @@ export async function PATCH(req: NextRequest) {
         .update(gfoCandidatesTable)
         .set({ resumeUrl })
         .where(eq(gfoCandidatesTable.userId, userId));
-      return NextResponse.json({ success: true, resumeUrl });
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Upload failed";
-      return NextResponse.json({ error: message }, { status: 500 });
+      return successResponse({ resumeUrl }, "Resume uploaded successfully");
+    } catch {
+      return ApiErrors.serverError("Failed to upload resume");
     }
   } else {
     const { action, progress } = await req.json();
-    if (action !== "progress")
-      return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+    if (action !== "progress") {
+      return ApiErrors.badRequest("Unknown action");
+    }
 
     const incoming = progress as InterviewProgressEntryDTO[];
 
@@ -269,7 +277,7 @@ export async function PATCH(req: NextRequest) {
 
     queueProfileSync(userId).catch(console.error);
 
-    return NextResponse.json({ success: true });
+    return successResponse(undefined, "Progress updated");
   }
 }
 
@@ -278,7 +286,7 @@ export async function PUT(req: NextRequest) {
   try {
     userId = await getCurrentUserId();
   } catch {
-    return NextResponse.json(null, { status: 401 });
+    return ApiErrors.unauthorized();
   }
 
   const body = await req.json();
@@ -323,5 +331,5 @@ export async function PUT(req: NextRequest) {
 
   queueProfileSync(userId).catch(console.error);
 
-  return NextResponse.json({ success: true });
+  return successResponse(undefined, "Profile updated");
 }

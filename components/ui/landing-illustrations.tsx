@@ -66,7 +66,12 @@ export const HeroIllustration = () => {
     const isInView = useInView(ref, { once: true });
 
     return (
-        <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-50 via-white to-blue-50/30 relative overflow-hidden flex items-center justify-center p-8">
+        <div
+            ref={ref}
+            role="img"
+            aria-label="Animated illustration showing a verified job offer with $240,000 annual compensation, L5 level verification from Stripe, and interview bypass feature"
+            className="w-full h-full bg-gradient-to-br from-slate-50 via-white to-blue-50/30 relative overflow-hidden flex items-center justify-center p-8"
+        >
             <BlueprintGrid />
 
             <GlowOrb color="blue" className="w-64 h-64 -top-20 -right-20" />
@@ -201,7 +206,12 @@ export const SearchIllustration = () => {
     const isInView = useInView(ref, { once: true });
 
     return (
-        <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-50 to-purple-50/30 relative overflow-hidden flex items-center justify-center py-10">
+        <div
+            ref={ref}
+            role="img"
+            aria-label="Animated illustration showing hybrid semantic search with vector and keyword matching, displaying a 98% match result"
+            className="w-full h-full bg-gradient-to-br from-slate-50 to-purple-50/30 relative overflow-hidden flex items-center justify-center py-10"
+        >
             <BlueprintGrid />
             <GlowOrb color="purple" className="w-48 h-48 top-10 right-10" />
 
@@ -375,7 +385,12 @@ export const PrivacyIllustration = () => {
     const isInView = useInView(ref, { once: true });
 
     return (
-        <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100/50 relative overflow-hidden flex items-center justify-center">
+        <div
+            ref={ref}
+            role="img"
+            aria-label="Animated illustration showing privacy controls with blurred sensitive data, encrypted employer and salary information, with only verified level visible"
+            className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100/50 relative overflow-hidden flex items-center justify-center"
+        >
             <BlueprintGrid />
             <GlowOrb color="blue" className="w-40 h-40 top-10 left-10" />
 
@@ -491,7 +506,12 @@ export const SpeedIllustration = () => {
     const isInView = useInView(ref, { once: true });
 
     return (
-        <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-50 to-blue-50/30 relative overflow-hidden flex items-center justify-center p-6">
+        <div
+            ref={ref}
+            role="img"
+            aria-label="Animated illustration comparing traditional 5-round interviews taking 6+ hours versus GetFinalOffer's instant verification in 0.2 seconds"
+            className="w-full h-full bg-gradient-to-br from-slate-50 to-blue-50/30 relative overflow-hidden flex items-center justify-center p-6"
+        >
             <BlueprintGrid />
             <GlowOrb color="green" className="w-32 h-32 bottom-10 right-10" />
 
@@ -586,7 +606,12 @@ export const VerificationIllustration = () => {
     const isInView = useInView(ref, { once: true });
 
     return (
-        <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-50 to-emerald-50/30 relative overflow-hidden flex items-center justify-center p-6">
+        <div
+            ref={ref}
+            role="img"
+            aria-label="Animated illustration showing employment verification with DKIM 2048-bit RSA signature validation and source verification from Stripe Inc."
+            className="w-full h-full bg-gradient-to-br from-slate-50 to-emerald-50/30 relative overflow-hidden flex items-center justify-center p-6"
+        >
             <BlueprintGrid />
             <GlowOrb color="green" className="w-48 h-48 top-10 right-10" />
 

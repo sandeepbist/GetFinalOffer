@@ -17,7 +17,8 @@ scripts/
 # next.js
 /.next/
 /out/
-
+.agent/
+.agents/
 # production
 /build
 

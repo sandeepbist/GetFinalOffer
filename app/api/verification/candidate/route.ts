@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import fs from "fs";
 import path from "path";
@@ -10,6 +9,9 @@ import {
   gfoInterviewDocumentsTable,
 } from "@/db/schemas";
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { ApiErrors, successResponse } from "@/features/common/api/response";
+import { validateFiles } from "@/features/common/api/file-validation";
+import { uploadLimiter } from "@/lib/limiter";
 
 export const config = {
   api: { bodyParser: false },
@@ -17,29 +19,26 @@ export const config = {
 
 export async function POST(req: NextRequest) {
   if (!req.headers.get("content-type")?.startsWith("multipart/form-data")) {
-    return NextResponse.json(
-      { success: false, error: "Invalid content type" },
-      { status: 400 }
-    );
+    return ApiErrors.badRequest("Invalid content type");
   }
 
   let userId: string;
   try {
     userId = await getCurrentUserId();
   } catch {
-    return NextResponse.json(
-      { success: false, error: "Authentication required" },
-      { status: 401 }
-    );
+    return ApiErrors.unauthorized();
+  }
+
+  const { success, limit, reset, remaining } = await uploadLimiter.limit(userId);
+  if (!success) {
+    return ApiErrors.rateLimited(limit, remaining, reset);
   }
 
   const form = await req.formData();
   const action = form.get("action")?.toString();
+
   if (!action || (action !== "profile" && action !== "interview")) {
-    return NextResponse.json(
-      { success: false, error: "Invalid action" },
-      { status: 400 }
-    );
+    return ApiErrors.badRequest("Invalid action. Must be 'profile' or 'interview'");
   }
 
   if (action === "profile") {
@@ -51,21 +50,18 @@ export async function POST(req: NextRequest) {
       })
       .where(eq(gfoCandidatesTable.userId, userId));
 
-    return NextResponse.json({ success: true });
+    return successResponse(undefined, "Profile verification requested");
   }
 
   const progId = form.get("interviewProgressId")?.toString();
   if (!progId) {
-    return NextResponse.json(
-      { success: false, error: "Missing interviewProgressId" },
-      { status: 400 }
-    );
+    return ApiErrors.badRequest("Missing interviewProgressId");
   }
 
-  await db
-    .update(gfoCandidateInterviewProgressTable)
-    .set({ verificationStatus: "pending", verificationRequestedAt: new Date() })
-    .where(eq(gfoCandidateInterviewProgressTable.id, progId));
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(progId)) {
+    return ApiErrors.badRequest("Invalid interviewProgressId format");
+  }
 
   const files: File[] = [];
   form.forEach((value, key) => {
@@ -73,8 +69,21 @@ export async function POST(req: NextRequest) {
       files.push(value);
     }
   });
-  const subject = form.get("subject")?.toString() || "";
-  const note = form.get("notes")?.toString() || "";
+
+  if (files.length > 0) {
+    const validationResult = await validateFiles(files);
+    if (!validationResult.valid) {
+      return ApiErrors.badRequest(validationResult.error || "Invalid file");
+    }
+  }
+
+  await db
+    .update(gfoCandidateInterviewProgressTable)
+    .set({ verificationStatus: "pending", verificationRequestedAt: new Date() })
+    .where(eq(gfoCandidateInterviewProgressTable.id, progId));
+
+  const subject = form.get("subject")?.toString()?.slice(0, 200) || "";
+  const note = form.get("notes")?.toString()?.slice(0, 2000) || "";
   const uploadsDir = path.join(
     process.cwd(),
     "public",
@@ -84,22 +93,28 @@ export async function POST(req: NextRequest) {
     "interview",
     String(progId)
   );
-  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-  for (const file of files) {
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const filename = `${Date.now()}-${file.name}`;
-    const filePath = path.join(uploadsDir, filename);
-    await fs.promises.writeFile(filePath, buffer);
-    const url = `/uploads/verifications/candidate/interview/${progId}/${filename}`;
+  if (files.length > 0) {
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
 
-    await db.insert(gfoInterviewDocumentsTable).values({
-      interviewProgressId: progId,
-      documentUrl: url,
-      subject,
-      note,
-    });
+    for (const file of files) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const filename = `${Date.now()}-${sanitizedName}`;
+      const filePath = path.join(uploadsDir, filename);
+      await fs.promises.writeFile(filePath, buffer);
+      const url = `/uploads/verifications/candidate/interview/${progId}/${filename}`;
+
+      await db.insert(gfoInterviewDocumentsTable).values({
+        interviewProgressId: progId,
+        documentUrl: url,
+        subject,
+        note,
+      });
+    }
   }
 
-  return NextResponse.json({ success: true });
+  return successResponse(undefined, "Interview verification requested");
 }

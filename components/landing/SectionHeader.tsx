@@ -32,16 +32,16 @@ export function SectionHeader({
             )}
         >
             {badge && (
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-6">
-                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                    <span className="text-sm font-semibold text-blue-700">{badge}</span>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-highlight rounded-full mb-6">
+                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                    <span className="text-sm font-semibold text-text">{badge}</span>
                 </div>
             )}
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 mb-4">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-heading mb-4">
                 {title}
             </h2>
             {subtitle && (
-                <p className="text-lg text-slate-500 leading-relaxed">{subtitle}</p>
+                <p className="text-lg text-text-muted leading-relaxed">{subtitle}</p>
             )}
         </motion.div>
     );

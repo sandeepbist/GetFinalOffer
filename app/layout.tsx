@@ -4,6 +4,7 @@ import "./globals.css";
 import { Header } from "@/components/Header";
 import { Toaster } from "@/components/ui/sonner";
 import { getCurrentSession } from "@/lib/auth/current-user";
+import { ThemeProvider, MotionProvider } from "@/components/providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -93,7 +94,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c1222" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -108,13 +109,17 @@ export default async function RootLayout({
   await getCurrentSession();
 
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-zinc-950`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        <Header />
-        <main>{children}</main>
-        <Toaster />
+        <ThemeProvider>
+          <MotionProvider>
+            <Header />
+            <main>{children}</main>
+            <Toaster />
+          </MotionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

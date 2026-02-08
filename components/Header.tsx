@@ -8,6 +8,8 @@ import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Sun, Moon } from "lucide-react";
+import { useTheme } from "@/components/providers";
 
 export function Header() {
   const router = useRouter();
@@ -16,6 +18,7 @@ export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const pathname = usePathname();
+  const { resolvedTheme, setTheme } = useTheme();
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     setScrolled(latest > 20);
@@ -34,6 +37,10 @@ export function Header() {
     });
   };
 
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
+  };
+
   const isLoggedInView = !!session?.user || isSigningOut;
 
   return (
@@ -43,36 +50,51 @@ export function Header() {
       className={cn(
         "sticky top-0 inset-x-0 z-50 transition-all duration-300",
         scrolled
-          ? "h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60"
+          ? "h-16 bg-background/80 backdrop-blur-md border-b border-border"
           : "h-24 bg-transparent border-transparent",
       )}
     >
       <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
         <Link
           href="/"
-          className="font-bold text-xl tracking-tight text-slate-900 hover:text-blue-600 transition-colors"
+          className="font-bold text-xl tracking-tight text-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
           GetFinalOffer
         </Link>
 
-        <nav className="flex items-center gap-6">
+        <nav className="flex items-center gap-4 md:gap-6">
           {isPending ? (
             <div className="flex items-center gap-4">
-              <Skeleton className="h-4 w-20 bg-slate-200/50" />
-              <Skeleton className="h-9 w-24 rounded-full bg-slate-200/50" />
+              <Skeleton className="h-4 w-20 bg-muted" />
+              <Skeleton className="h-9 w-24 rounded-full bg-muted" />
             </div>
           ) : (
             <>
               {!isLoggedInView && (
-                <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
-                  <Link href="#how-it-works" className="hover:text-slate-900 transition-colors">
+                <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
+                  <Link href="#how-it-works" className="hover:text-foreground transition-colors">
                     How it Works
                   </Link>
-                  <Link href="#features" className="hover:text-slate-900 transition-colors">
+                  <Link href="#features" className="hover:text-foreground transition-colors">
                     Features
                   </Link>
                 </div>
               )}
+
+              {/* Theme Toggle Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                className="rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
+                aria-label={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {resolvedTheme === "dark" ? (
+                  <Sun className="h-5 w-5" aria-hidden="true" />
+                ) : (
+                  <Moon className="h-5 w-5" aria-hidden="true" />
+                )}
+              </Button>
 
               {!isLoggedInView ? (
                 <div className="flex items-center gap-3">
@@ -91,9 +113,9 @@ export function Header() {
                     size="sm"
                     onClick={handleSignOut}
                     disabled={isSigningOut}
-                    className="rounded-full text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                    className="rounded-full text-muted-foreground border-border hover:border-muted-foreground hover:bg-muted disabled:opacity-50"
                   >
-                    {isSigningOut ? "Signing Out..." : "Sign Out"}
+                    {isSigningOut ? "Signing Out…" : "Sign Out"}
                   </Button>
                 </div>
               )}

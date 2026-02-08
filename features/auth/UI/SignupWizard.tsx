@@ -44,18 +44,18 @@ export const SignupWizard: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0, duration: 0.3 }}
       >
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+        <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
           Full Name
         </label>
         <div className="relative group">
-          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted group-focus-within:text-primary transition-colors" />
           <Input
             type="text"
             name="fullName"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder="John Doe"
-            className="pl-10 h-10 bg-slate-50/50 border-slate-200 focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all"
+            className="pl-10 h-10"
           />
         </div>
       </motion.div>
@@ -65,18 +65,18 @@ export const SignupWizard: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.3 }}
       >
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+        <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
           Email
         </label>
         <div className="relative group">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted group-focus-within:text-primary transition-colors" />
           <Input
             type="email"
             name="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="name@company.com"
-            className="pl-10 h-10 bg-slate-50/50 border-slate-200 focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all"
+            className="pl-10 h-10"
           />
         </div>
       </motion.div>
@@ -86,18 +86,18 @@ export const SignupWizard: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.3 }}
       >
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+        <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
           Password
         </label>
         <div className="relative group">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted group-focus-within:text-primary transition-colors" />
           <Input
             type="password"
             name="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Min. 6 characters"
-            className="pl-10 h-10 bg-slate-50/50 border-slate-200 focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all"
+            className="pl-10 h-10"
           />
         </div>
       </motion.div>
@@ -110,7 +110,7 @@ export const SignupWizard: React.FC = () => {
       >
         <Button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold h-10 shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30"
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-10 shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30"
           disabled={loading || !isValid}
         >
           {loading ? (
@@ -128,7 +128,7 @@ export const SignupWizard: React.FC = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.3 }}
-        className="text-xs text-center text-slate-500"
+        className="text-xs text-center text-text-muted"
       >
         By clicking continue, you agree to our Terms of Service and Privacy Policy.
       </motion.p>

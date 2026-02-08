@@ -8,7 +8,7 @@ import ScrollWrapper from "@/components/ScrollWrapper";
 export default function HomePage() {
   return (
     <ScrollWrapper>
-      <main className="bg-white min-h-screen selection:bg-blue-100 selection:text-blue-900">
+      <main className="bg-section min-h-screen selection:bg-primary/20 selection:text-primary">
         <Hero />
         <StatsGrid />
         <HowItWorks />

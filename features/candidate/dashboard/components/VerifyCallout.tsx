@@ -97,7 +97,7 @@ export const VerifyCallout: React.FC<VerifyCalloutProps> = ({
       case "unverified":
         return (
           <Button
-            className="bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-900/20"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
             size="sm"
           >
             Request Verification <ArrowRight className="ml-2 w-3 h-3" />
@@ -108,7 +108,7 @@ export const VerifyCallout: React.FC<VerifyCalloutProps> = ({
           <Button
             variant="secondary"
             disabled
-            className="bg-amber-100 text-amber-800 opacity-100 cursor-default"
+            className="bg-amber-500/10 text-amber-600 border-amber-500/20 border opacity-100 cursor-default"
           >
             <Clock className="mr-2 h-4 w-4" /> Pending Review
           </Button>
@@ -118,7 +118,7 @@ export const VerifyCallout: React.FC<VerifyCalloutProps> = ({
           <Button
             variant="secondary"
             disabled
-            className="bg-emerald-100 text-emerald-800 opacity-100 cursor-default"
+            className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 border opacity-100 cursor-default"
           >
             <CheckCircle2 className="mr-2 h-4 w-4" /> Verified
           </Button>
@@ -128,7 +128,7 @@ export const VerifyCallout: React.FC<VerifyCalloutProps> = ({
           <Button
             variant="destructive"
             size="sm"
-            className="bg-red-100 text-red-700 hover:bg-red-200 border-red-200"
+            className="bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20 border"
           >
             <RefreshCcw className="mr-2 h-4 w-4" /> Try Again
           </Button>
@@ -147,7 +147,7 @@ export const VerifyCallout: React.FC<VerifyCalloutProps> = ({
   if (context === "interview") {
     if (status === "verified") {
       return (
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-medium">
+        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-medium">
           <CheckCircle2 className="w-3.5 h-3.5" /> Verified
         </div>
       );
@@ -160,7 +160,7 @@ export const VerifyCallout: React.FC<VerifyCalloutProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 text-xs font-medium"
+              className="text-primary hover:text-primary/80 hover:bg-primary/5 h-8 text-xs font-medium"
             >
               Verify
             </Button>
@@ -190,8 +190,8 @@ export const VerifyCallout: React.FC<VerifyCalloutProps> = ({
       className={cn(
         "rounded-xl border-none shadow-md overflow-hidden",
         status === "verified"
-          ? "bg-emerald-50/50 border border-emerald-100"
-          : "bg-gradient-to-r from-slate-900 to-slate-800 text-white",
+          ? "bg-emerald-500/5 border border-emerald-500/20"
+          : "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground",
       )}
     >
       <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-6 p-6">
@@ -199,13 +199,13 @@ export const VerifyCallout: React.FC<VerifyCalloutProps> = ({
           <div
             className={cn(
               "p-3 rounded-xl",
-              status === "verified" ? "bg-emerald-100" : "bg-white/10",
+              status === "verified" ? "bg-emerald-500/10" : "bg-white/10",
             )}
           >
             <ShieldCheck
               className={cn(
                 "h-8 w-8",
-                status === "verified" ? "text-emerald-600" : "text-blue-200",
+                status === "verified" ? "text-emerald-600" : "text-primary-foreground/80",
               )}
             />
           </div>
@@ -213,7 +213,7 @@ export const VerifyCallout: React.FC<VerifyCalloutProps> = ({
             <h4
               className={cn(
                 "text-lg font-bold",
-                status === "verified" ? "text-emerald-900" : "text-white",
+                status === "verified" ? "text-emerald-700" : "text-primary-foreground",
               )}
             >
               {status === "verified" ? "Your profile is verified" : title}
@@ -221,7 +221,7 @@ export const VerifyCallout: React.FC<VerifyCalloutProps> = ({
             <p
               className={cn(
                 "text-sm max-w-lg leading-relaxed",
-                status === "verified" ? "text-emerald-700" : "text-slate-300",
+                status === "verified" ? "text-emerald-600" : "text-primary-foreground/80",
               )}
             >
               {status === "verified"
@@ -233,9 +233,9 @@ export const VerifyCallout: React.FC<VerifyCalloutProps> = ({
 
         <div className="flex-shrink-0">
           {status === "verified" ? (
-            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-emerald-100">
+            <div className="flex items-center gap-2 px-4 py-2 bg-surface rounded-lg shadow-sm border border-emerald-500/20">
               <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-              <span className="text-sm font-bold text-emerald-800">
+              <span className="text-sm font-bold text-emerald-700">
                 Verified
               </span>
             </div>
@@ -243,7 +243,7 @@ export const VerifyCallout: React.FC<VerifyCalloutProps> = ({
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 {status === "unverified" ? (
-                  <Button className="bg-white text-slate-900 hover:bg-blue-50 border-none font-semibold shadow-xl">
+                  <Button className="bg-surface text-heading hover:bg-surface/90 border-none font-semibold shadow-xl">
                     Verify Now <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                 ) : (
@@ -287,11 +287,11 @@ function VerificationDialogContent({
   return (
     <DialogContent className="sm:max-w-lg">
       <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-blue-600" />
+        <DialogTitle className="flex items-center gap-2 text-heading">
+          <ShieldCheck className="w-5 h-5 text-primary" />
           {title}
         </DialogTitle>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-text-muted">
           Upload documents to prove your claim. We accept offer letters,
           official emails, or badges.
         </p>
@@ -300,7 +300,7 @@ function VerificationDialogContent({
         <div className="grid gap-2">
           <Label
             htmlFor="subject"
-            className="text-xs font-semibold uppercase text-slate-500"
+            className="text-xs font-semibold uppercase text-text-muted"
           >
             Item to Verify
           </Label>
@@ -309,18 +309,17 @@ function VerificationDialogContent({
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="e.g. Google L4 Role"
-            className="bg-slate-50"
           />
         </div>
 
         <div className="grid gap-2">
           <Label
             htmlFor="files"
-            className="text-xs font-semibold uppercase text-slate-500"
+            className="text-xs font-semibold uppercase text-text-muted"
           >
             Proof Documents
           </Label>
-          <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer relative">
+          <div className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center bg-highlight hover:bg-muted transition-colors cursor-pointer relative">
             <input
               id="files"
               type="file"
@@ -328,13 +327,13 @@ function VerificationDialogContent({
               onChange={onFileChange}
               className="absolute inset-0 opacity-0 cursor-pointer"
             />
-            <UploadCloud className="w-8 h-8 text-slate-400 mb-2" />
-            <p className="text-sm font-medium text-slate-700">
+            <UploadCloud className="w-8 h-8 text-text-muted mb-2" />
+            <p className="text-sm font-medium text-text">
               {files.length > 0
                 ? `${files.length} files selected`
                 : "Click to upload files"}
             </p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-text-subtle mt-1">
               PDF, PNG, JPG (Max 5MB)
             </p>
           </div>
@@ -343,7 +342,7 @@ function VerificationDialogContent({
         <div className="grid gap-2">
           <Label
             htmlFor="notes"
-            className="text-xs font-semibold uppercase text-slate-500"
+            className="text-xs font-semibold uppercase text-text-muted"
           >
             Additional Notes
           </Label>
@@ -359,7 +358,7 @@ function VerificationDialogContent({
         <div className="grid gap-2">
           <Label
             htmlFor="links"
-            className="text-xs font-semibold uppercase text-slate-500"
+            className="text-xs font-semibold uppercase text-text-muted"
           >
             External Links (Optional)
           </Label>
@@ -371,14 +370,14 @@ function VerificationDialogContent({
           />
         </div>
       </div>
-      <DialogFooter className="bg-slate-50 -mx-6 -mb-6 p-4 border-t border-slate-100">
+      <DialogFooter className="bg-highlight -mx-6 -mb-6 p-4 border-t border-border">
         <DialogClose asChild>
           <Button variant="ghost">Cancel</Button>
         </DialogClose>
         <Button
           onClick={onSubmit}
           disabled={loading || !subject.trim() || files.length === 0}
-          className="bg-blue-600 hover:bg-blue-700"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           {loading ? "Submitting..." : "Submit Verification"}
         </Button>

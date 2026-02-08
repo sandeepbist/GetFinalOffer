@@ -27,7 +27,7 @@ export default function RecruiterDashboard({ user }: { user: TUserAuth }) {
     switch (status) {
       case "accepted":
         return (
-          <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-none shadow-sm">
+          <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20 border shadow-sm">
             Accepted
           </Badge>
         );
@@ -35,7 +35,7 @@ export default function RecruiterDashboard({ user }: { user: TUserAuth }) {
         return <Badge variant="destructive">Rejected</Badge>;
       default:
         return (
-          <Badge variant="outline" className="text-slate-500 bg-slate-50">
+          <Badge variant="outline" className="text-text-muted bg-highlight">
             Pending
           </Badge>
         );
@@ -43,21 +43,21 @@ export default function RecruiterDashboard({ user }: { user: TUserAuth }) {
   };
 
   return (
-    <main className="min-h-screen bg-white p-8 space-y-8">
+    <main className="min-h-screen bg-section p-8 space-y-8">
       <div className="max-w-5xl mx-auto space-y-1">
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+        <h1 className="text-3xl font-bold text-heading tracking-tight">
           Welcome back, {user.name}
         </h1>
-        <p className="text-slate-500">
+        <p className="text-text-muted">
           Manage your organization and find talent.
         </p>
       </div>
 
       <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
+        <Card className="border-border shadow-sm hover:shadow-md transition-shadow group bg-surface">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-slate-900">
-              <Search className="w-5 h-5 text-blue-600" />
+            <CardTitle className="flex items-center gap-2 text-heading">
+              <Search className="w-5 h-5 text-primary" />
               Talent Search
             </CardTitle>
             <CardDescription>
@@ -65,15 +65,15 @@ export default function RecruiterDashboard({ user }: { user: TUserAuth }) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 flex items-start gap-4">
-              <div className="p-2 bg-white rounded-md shadow-sm text-blue-600">
+            <div className="p-4 bg-highlight rounded-lg border border-border flex items-start gap-4">
+              <div className="p-2 bg-surface rounded-md shadow-sm text-primary">
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-medium text-slate-900 text-sm">
+                <h4 className="font-medium text-heading text-sm">
                   Semantic Search Active
                 </h4>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-text-muted mt-1">
                   You can search for &quot;React developers with 3 years exp&quot;
                   instead of just keywords.
                 </p>
@@ -82,7 +82,7 @@ export default function RecruiterDashboard({ user }: { user: TUserAuth }) {
 
             <Button
               asChild
-              className="w-full bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
             >
               <Link href="/recruiter/candidates">
                 Go to Search <ArrowRight className="ml-2 h-4 w-4" />
@@ -91,9 +91,9 @@ export default function RecruiterDashboard({ user }: { user: TUserAuth }) {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 shadow-sm opacity-60 bg-slate-50/50">
+        <Card className="border-border shadow-sm opacity-60 bg-highlight">
           <CardHeader>
-            <CardTitle className="text-slate-500">
+            <CardTitle className="text-text-muted">
               Analytics (Coming Soon)
             </CardTitle>
             <CardDescription>
@@ -101,8 +101,8 @@ export default function RecruiterDashboard({ user }: { user: TUserAuth }) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-24 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-lg">
-              <p className="text-xs text-slate-400 font-medium">
+            <div className="h-24 flex items-center justify-center border-2 border-dashed border-border rounded-lg">
+              <p className="text-xs text-text-subtle font-medium">
                 No data available
               </p>
             </div>
@@ -111,16 +111,16 @@ export default function RecruiterDashboard({ user }: { user: TUserAuth }) {
       </div>
 
       <div className="max-w-5xl mx-auto">
-        <Card className="border-slate-200 shadow-sm">
+        <Card className="border-border shadow-sm bg-surface">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-slate-900">
-              <Users className="w-5 h-5 text-indigo-600" />
+            <CardTitle className="flex items-center gap-2 text-heading">
+              <Users className="w-5 h-5 text-purple-500" />
               Recent Outreach
             </CardTitle>
           </CardHeader>
           <CardContent>
             {contacts.length === 0 ? (
-              <div className="text-center py-8 text-slate-500 text-sm">
+              <div className="text-center py-8 text-text-muted text-sm">
                 You haven&apos;t contacted any candidates yet.
               </div>
             ) : (
@@ -128,16 +128,16 @@ export default function RecruiterDashboard({ user }: { user: TUserAuth }) {
                 {contacts.map((c) => (
                   <div
                     key={c.id}
-                    className="flex items-center justify-between p-3 border border-slate-100 rounded-lg bg-slate-50/50"
+                    className="flex items-center justify-between p-3 border border-border rounded-lg bg-highlight"
                   >
                     <div>
-                      <p className="font-semibold text-slate-900 text-sm">
+                      <p className="font-semibold text-heading text-sm">
                         {c.candidateName}
                       </p>
-                      <p className="text-xs text-slate-500">{c.candidateTitle}</p>
+                      <p className="text-xs text-text-muted">{c.candidateTitle}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-text-subtle">
                         {new Date(c.contactedAt).toLocaleDateString()}
                       </span>
                       {getStatusBadge(c.status)}

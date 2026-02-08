@@ -50,20 +50,20 @@ function AIReasoningBadge({ reasoning }: { reasoning?: string }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="group inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold border border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300 transition-all ml-2 shadow-sm">
-          <Bot className="w-3.5 h-3.5 group-hover:text-indigo-600" />
+        <button className="group inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 text-xs font-semibold border border-indigo-500/20 hover:bg-indigo-500/20 hover:border-indigo-500/30 transition-all ml-2 shadow-sm">
+          <Bot className="w-3.5 h-3.5 group-hover:text-indigo-500" />
           <span>AI Insight</span>
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0 overflow-hidden shadow-xl border-indigo-100" align="start">
-        <div className="bg-gradient-to-r from-indigo-50 to-white px-4 py-3 border-b border-indigo-100 flex items-center gap-2">
-          <div className="p-1.5 bg-white rounded-md shadow-sm border border-indigo-50">
+      <PopoverContent className="w-80 p-0 overflow-hidden shadow-xl border-border" align="start">
+        <div className="bg-highlight px-4 py-3 border-b border-border flex items-center gap-2">
+          <div className="p-1.5 bg-surface rounded-md shadow-sm border border-border">
             <Bot className="w-4 h-4 text-indigo-600" />
           </div>
-          <h4 className="text-sm font-bold text-slate-700">Why this candidate?</h4>
+          <h4 className="text-sm font-bold text-heading">Why this candidate?</h4>
         </div>
-        <div className="p-4 bg-white">
-          <p className="text-sm text-slate-600 leading-relaxed">
+        <div className="p-4 bg-surface">
+          <p className="text-sm text-text leading-relaxed">
             {reasoning}
           </p>
         </div>
@@ -77,7 +77,7 @@ function ConfidenceBadge({ score }: { score: number }) {
 
   if (score > 0.7) {
     return (
-      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1 ml-2">
+      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1 ml-2">
         <Sparkles className="w-3 h-3" />
         {Math.round(score)}% Match
       </Badge>
@@ -86,7 +86,7 @@ function ConfidenceBadge({ score }: { score: number }) {
 
   if (score < 0.3) {
     return (
-      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 gap-1 ml-2">
+      <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 gap-1 ml-2">
         <AlertTriangle className="w-3 h-3" />
         Broad Match ({Math.round(score * 100)}%)
       </Badge>
@@ -104,23 +104,23 @@ function MatchHighlight({ text, query }: { text?: string; query?: string }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100 transition-colors mt-3 border border-blue-100">
+        <button className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors mt-3 border border-primary/20">
           <Sparkles className="w-3.5 h-3.5" />
           Why this matched?
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-4 shadow-xl" align="start">
         <div className="space-y-2">
-          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+          <h4 className="text-xs font-bold text-text-muted uppercase tracking-wider flex items-center gap-2">
             <Sparkles className="w-3 h-3" /> AI Context Match
           </h4>
-          <div className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-md border border-slate-100 italic">
+          <div className="text-sm text-text leading-relaxed bg-highlight p-3 rounded-md border border-border italic">
             &quot;...
             {parts.map((part, i) =>
               part.toLowerCase() === query?.toLowerCase() ? (
                 <span
                   key={i}
-                  className="bg-yellow-200 text-slate-900 font-bold px-0.5 rounded shadow-sm"
+                  className="bg-yellow-400/30 text-heading font-bold px-0.5 rounded shadow-sm"
                 >
                   {part}
                 </span>
@@ -202,8 +202,8 @@ export default function CandidateSearch() {
   return (
     <main className="space-y-6 p-6 max-w-5xl mx-auto">
       <div className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Candidate Search</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-3xl font-bold tracking-tight text-heading">Candidate Search</h1>
+        <p className="text-sm text-text-muted">
           Find the best talent using AI-powered search and deep filters.
         </p>
       </div>
@@ -221,7 +221,7 @@ export default function CandidateSearch() {
           />
           {loading && (
             <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+              <Loader2 className="h-4 w-4 animate-spin text-text-muted" />
             </div>
           )}
         </div>
@@ -229,14 +229,14 @@ export default function CandidateSearch() {
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className="relative flex items-center h-10 border-slate-300"
+              className="relative flex items-center h-10"
             >
-              <Filter className="mr-2 h-4 w-4 text-slate-500" />
+              <Filter className="mr-2 h-4 w-4 text-text-muted" />
               Filters
               {activeFilterCount > 0 && (
                 <Badge
                   variant="secondary"
-                  className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center rounded-full bg-blue-600 text-white text-[10px]"
+                  className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px]"
                 >
                   {activeFilterCount}
                 </Badge>
@@ -246,7 +246,7 @@ export default function CandidateSearch() {
           <PopoverContent className="w-72 p-2">
             <Accordion type="multiple" className="space-y-2">
               <AccordionItem value="years" className="border-none">
-                <AccordionTrigger className="hover:no-underline py-2 px-3 hover:bg-slate-50 rounded-md">
+                <AccordionTrigger className="hover:no-underline py-2 px-3 hover:bg-highlight rounded-md">
                   Experience
                 </AccordionTrigger>
                 <AccordionContent>
@@ -273,7 +273,7 @@ export default function CandidateSearch() {
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="company" className="border-none">
-                <AccordionTrigger className="hover:no-underline py-2 px-3 hover:bg-slate-50 rounded-md">
+                <AccordionTrigger className="hover:no-underline py-2 px-3 hover:bg-highlight rounded-md">
                   Company
                 </AccordionTrigger>
                 <AccordionContent>
@@ -307,7 +307,7 @@ export default function CandidateSearch() {
       <div className="space-y-4">
         {loading && candidates.length === 0 ? (
           Array.from({ length: skeletonCount }).map((_, idx) => (
-            <Card key={idx} className="border-slate-100 shadow-sm">
+            <Card key={idx} className="border-border shadow-sm">
               <CardContent className="flex items-center gap-4 p-5">
                 <Skeleton className="h-14 w-14 rounded-full" />
                 <div className="flex-1 space-y-2.5">
@@ -326,32 +326,32 @@ export default function CandidateSearch() {
           candidates.map((c, index) => (
             <Card
               key={c.id}
-              className="group border-slate-200 shadow-sm hover:shadow-md transition-shadow"
+              className="group border-border shadow-sm hover:shadow-md transition-shadow bg-surface"
             >
               <CardContent className="flex items-start justify-between p-5">
                 <div className="flex items-start gap-5">
-                  <Avatar className="h-14 w-14 border border-slate-100">
+                  <Avatar className="h-14 w-14 border border-border">
                     <AvatarImage src={c.image || `/avatar.jpg`} alt={c.name} />
-                    <AvatarFallback className="bg-blue-50 text-blue-700 font-semibold">
+                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                       {c.name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-bold text-slate-900 leading-tight">
+                      <h3 className="text-lg font-bold text-heading leading-tight">
                         {c.name}
                       </h3>
                       <ConfidenceBadge score={c.matchScore || 0} />
                       <AIReasoningBadge reasoning={c.aiReasoning} />
                     </div>
 
-                    <p className="text-sm font-medium text-slate-600">
+                    <p className="text-sm font-medium text-text">
                       {c.title || "Candidate"}
                     </p>
 
-                    <p className="text-sm text-slate-500 flex items-center gap-2">
+                    <p className="text-sm text-text-muted flex items-center gap-2">
                       <span>{c.location}</span>
-                      <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                      <span className="w-1 h-1 rounded-full bg-text-subtle"></span>
                       <span>{c.yearsExperience} years exp.</span>
                     </p>
 
@@ -360,20 +360,20 @@ export default function CandidateSearch() {
                         <Badge
                           key={skill}
                           variant="secondary"
-                          className="bg-slate-100 text-slate-700 hover:bg-slate-200 border-transparent font-normal"
+                          className="bg-highlight text-text hover:bg-muted border-transparent font-normal"
                         >
                           {skill}
                         </Badge>
                       ))}
                       {c.skills.length > 5 && (
-                        <span className="text-xs text-slate-500 self-center">
+                        <span className="text-xs text-text-muted self-center">
                           +{c.skills.length - 5} more
                         </span>
                       )}
                     </div>
 
                     {c.matchScore && c.matchScore < 0.3 && (
-                      <div className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-100 flex items-start gap-2">
+                      <div className="mt-2 text-xs text-amber-600 bg-amber-500/10 p-2 rounded border border-amber-500/20 flex items-start gap-2">
                         <Info className="w-4 h-4 shrink-0 mt-0.5" />
                         <p>
                           We couldn&apos;t find an exact keyword match, so we included candidates with
@@ -392,7 +392,7 @@ export default function CandidateSearch() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="whitespace-nowrap font-medium text-blue-700 bg-blue-50 border-blue-100 hover:bg-blue-100 hover:border-blue-200 hover:text-blue-800"
+                    className="whitespace-nowrap font-medium text-primary bg-primary/10 border-primary/20 hover:bg-primary/20 hover:border-primary/30 hover:text-primary"
                     onClick={() => {
                       setSelected(c.id);
 
@@ -412,20 +412,20 @@ export default function CandidateSearch() {
             </Card>
           ))
         ) : (
-          <div className="text-center py-12 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-slate-100">
-              <Filter className="w-6 h-6 text-slate-300" />
+          <div className="text-center py-12 bg-highlight rounded-lg border border-dashed border-border">
+            <div className="w-12 h-12 bg-surface rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-border">
+              <Filter className="w-6 h-6 text-text-subtle" />
             </div>
-            <h3 className="text-lg font-medium text-slate-900">
+            <h3 className="text-lg font-medium text-heading">
               No candidates found
             </h3>
-            <p className="text-slate-500 max-w-sm mx-auto mt-1">
+            <p className="text-text-muted max-w-sm mx-auto mt-1">
               Try adjusting your search terms or removing some filters to see
               more results.
             </p>
             <Button
               variant="link"
-              className="mt-2 text-blue-600"
+              className="mt-2 text-primary"
               onClick={() => {
                 setSearch("");
                 setYearsFilter(null);
@@ -438,7 +438,7 @@ export default function CandidateSearch() {
         )}
       </div>
 
-      <div className="flex items-center justify-between border-t border-slate-100 pt-6">
+      <div className="flex items-center justify-between border-t border-border pt-6">
         <Button
           variant="outline"
           size="sm"
@@ -448,7 +448,7 @@ export default function CandidateSearch() {
         >
           Previous
         </Button>
-        <span className="text-sm text-slate-500 font-medium">
+        <span className="text-sm text-text-muted font-medium">
           Page {page} of {Math.ceil(total / pageSize)}
         </span>
         <Button

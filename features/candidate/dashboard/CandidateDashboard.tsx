@@ -48,11 +48,11 @@ function DashboardSkeleton() {
   return (
     <main className="max-w-7xl mx-auto space-y-6 px-6 py-8">
       <div className="space-y-2">
-        <Skeleton className="h-10 w-64 bg-slate-200" />
-        <Skeleton className="h-5 w-48 bg-slate-100" />
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-5 w-48" />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-6 h-fit">
+        <div className="rounded-xl border border-border bg-surface p-6 space-y-6 h-fit">
           <Skeleton className="h-20 w-20 rounded-full" />
           <Skeleton className="h-10 w-full" />
         </div>
@@ -176,7 +176,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
   );
 
   const entries: InterviewProgress[] =
-    profile?.interviewProgress.map((e) => ({
+    (profile?.interviewProgress ?? []).map((e) => ({
       id: e.id,
       companyId: e.companyId,
       position: e.position,
@@ -185,7 +185,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
       status: e.status,
       verificationStatus: e.verificationStatus as VerificationStatus,
       dateCleared: e.dateCleared,
-    })) || [];
+    }));
 
   const handleSaveProgress = async (updated: InterviewProgress[]) => {
     const dto: InterviewProgressEntryDTO[] = updated.map((e) => ({
@@ -274,12 +274,12 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
   const completion = Math.round((filledCount / completionFields.length) * 100);
 
   const skillNames =
-    profile?.skillIds.map(
+    (profile?.skillIds ?? []).map(
       (id) => skills.find((s) => s.id === id)?.name || ""
-    ) || [];
+    );
 
   return (
-    <main className="max-w-7xl mx-auto space-y-6 px-6 py-8">
+    <main className="max-w-7xl mx-auto space-y-6 px-6 py-8 bg-section min-h-screen">
       <WelcomeBanner name={user.name} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -300,9 +300,9 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
 
         <div className="lg:col-span-2 space-y-6">
           {invites.length > 0 && (
-            <Card className="border-blue-100 bg-blue-50/50 shadow-sm">
+            <Card className="border-primary/20 bg-primary/5 shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2 text-blue-900">
+                <CardTitle className="text-lg flex items-center gap-2 text-heading">
                   <BellRing className="w-5 h-5" /> Recruiter Invites
                 </CardTitle>
               </CardHeader>
@@ -310,16 +310,16 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
                 {invites.map((invite) => (
                   <div
                     key={invite.id}
-                    className="flex items-center justify-between p-4 bg-white rounded-xl border border-blue-100 shadow-sm"
+                    className="flex items-center justify-between p-4 bg-surface rounded-xl border border-border shadow-sm"
                   >
                     <div>
-                      <p className="font-bold text-slate-900">
+                      <p className="font-bold text-heading">
                         {invite.organisationName}
                       </p>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm text-text-muted">
                         {invite.recruiterName} wants to connect
                       </p>
-                      <p className="text-xs text-slate-400 mt-1">
+                      <p className="text-xs text-text-subtle mt-1">
                         {new Date(invite.contactedAt).toLocaleDateString()}
                       </p>
                     </div>
@@ -329,7 +329,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="text-slate-500 hover:text-red-600 hover:bg-red-50"
+                          className="text-text-muted hover:text-destructive hover:bg-destructive/10"
                           onClick={() =>
                             handleInviteResponse(invite.id, "rejected")
                           }
@@ -338,7 +338,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
                         </Button>
                         <Button
                           size="sm"
-                          className="bg-blue-600 hover:bg-blue-700"
+                          className="bg-primary hover:bg-primary/90"
                           onClick={() =>
                             handleInviteResponse(invite.id, "accepted")
                           }

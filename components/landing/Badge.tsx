@@ -17,12 +17,12 @@ export function Badge({ children, className }: BadgeProps) {
       transition={{ duration: 0.5 }}
       className={cn(
         "inline-flex items-center gap-2 px-4 py-2 rounded-full",
-        "bg-blue-50 border border-blue-100",
-        "text-sm font-semibold text-blue-700",
+        "bg-highlight border border-border",
+        "text-sm font-semibold text-text",
         className
       )}
     >
-      <Sparkles className="w-4 h-4" />
+      <Sparkles className="w-4 h-4 text-primary" aria-hidden="true" />
       {children}
     </motion.div>
   );

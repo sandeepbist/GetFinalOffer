@@ -29,7 +29,7 @@ export function FeatureShowcase({
             ref={ref}
             className={cn(
                 "grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 py-16 lg:py-24",
-                "border-b border-slate-100 last:border-0"
+                "border-b border-border-subtle last:border-0"
             )}
         >
             <motion.div
@@ -40,22 +40,22 @@ export function FeatureShowcase({
             >
                 <div className="space-y-6">
                     {badge && (
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-lg">
-                            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-highlight rounded-lg">
+                            <span className="text-xs font-bold text-text-muted uppercase tracking-wider">
                                 {badge}
                             </span>
                         </div>
                     )}
 
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-200">
-                        <Icon className="w-7 h-7" />
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-lg">
+                        <Icon className="w-7 h-7" aria-hidden="true" />
                     </div>
 
-                    <h3 className="text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">
+                    <h3 className="text-2xl lg:text-3xl font-bold text-heading tracking-tight">
                         {title}
                     </h3>
 
-                    <p className="text-lg text-slate-600 leading-relaxed max-w-md">
+                    <p className="text-lg text-text-muted leading-relaxed max-w-md">
                         {description}
                     </p>
                 </div>
@@ -67,7 +67,7 @@ export function FeatureShowcase({
                 transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
                 className={cn(
                     "relative h-[400px] lg:h-[500px] rounded-3xl overflow-hidden",
-                    "bg-white border border-slate-200 shadow-xl",
+                    "bg-surface border border-border shadow-xl",
                     reverse && "lg:order-1"
                 )}
             >

@@ -110,8 +110,6 @@ export default function RecruiterSignupWizard() {
     router.push("/dashboard");
   };
 
-  const inputClass = "pl-10 h-10 bg-slate-50/50 border-slate-200 focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all";
-
   return (
     <FormProvider {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -125,11 +123,11 @@ export default function RecruiterSignupWizard() {
             name="fullName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Full Name</FormLabel>
+                <FormLabel className="text-xs font-semibold text-text-muted uppercase tracking-wider">Full Name</FormLabel>
                 <FormControl>
                   <div className="relative group">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                    <Input {...field} placeholder="Jane Smith" className={inputClass} />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted group-focus-within:text-primary transition-colors" />
+                    <Input {...field} placeholder="Jane Smith" className="pl-10 h-10" />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -148,10 +146,10 @@ export default function RecruiterSignupWizard() {
             name="organisationId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Organisation</FormLabel>
+                <FormLabel className="text-xs font-semibold text-text-muted uppercase tracking-wider">Organisation</FormLabel>
                 <FormControl>
                   <div className="relative group">
-                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 z-10 pointer-events-none" />
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted z-10 pointer-events-none" />
                     <Select
                       value={field.value}
                       onValueChange={(val) => {
@@ -159,7 +157,7 @@ export default function RecruiterSignupWizard() {
                         trigger("email");
                       }}
                     >
-                      <SelectTrigger className="pl-10 h-10 bg-slate-50/50 border-slate-200 focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all">
+                      <SelectTrigger className="pl-10 h-10">
                         <SelectValue placeholder="Select your company" />
                       </SelectTrigger>
                       <SelectContent>
@@ -188,11 +186,11 @@ export default function RecruiterSignupWizard() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Work Email</FormLabel>
+                <FormLabel className="text-xs font-semibold text-text-muted uppercase tracking-wider">Work Email</FormLabel>
                 <FormControl>
                   <div className="relative group">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                    <Input {...field} type="email" placeholder="you@company.com" className={inputClass} />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted group-focus-within:text-primary transition-colors" />
+                    <Input {...field} type="email" placeholder="you@company.com" className="pl-10 h-10" />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -211,11 +209,11 @@ export default function RecruiterSignupWizard() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Password</FormLabel>
+                <FormLabel className="text-xs font-semibold text-text-muted uppercase tracking-wider">Password</FormLabel>
                 <FormControl>
                   <div className="relative group">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                    <Input {...field} type="password" placeholder="Min. 6 characters" className={inputClass} />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted group-focus-within:text-primary transition-colors" />
+                    <Input {...field} type="password" placeholder="Min. 6 characters" className="pl-10 h-10" />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -233,7 +231,7 @@ export default function RecruiterSignupWizard() {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold h-10 shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-10 shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30"
           >
             {isSubmitting ? (
               <>
@@ -250,7 +248,7 @@ export default function RecruiterSignupWizard() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.3 }}
-          className="text-xs text-center text-slate-500"
+          className="text-xs text-center text-text-muted"
         >
           By clicking continue, you agree to our Terms of Service and Privacy Policy.
         </motion.p>

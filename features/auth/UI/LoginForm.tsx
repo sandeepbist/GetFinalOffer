@@ -78,14 +78,14 @@ export function LoginForm() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</FormLabel>
+                <FormLabel className="text-xs font-semibold text-text-muted uppercase tracking-wider">Email</FormLabel>
                 <FormControl>
                   <div className="relative group">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted group-focus-within:text-primary transition-colors" />
                     <Input
                       {...field}
                       placeholder="name@company.com"
-                      className="pl-10 h-10 bg-slate-50/50 border-slate-200 focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all"
+                      className="pl-10 h-10"
                     />
                   </div>
                 </FormControl>
@@ -105,15 +105,15 @@ export function LoginForm() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Password</FormLabel>
+                <FormLabel className="text-xs font-semibold text-text-muted uppercase tracking-wider">Password</FormLabel>
                 <FormControl>
                   <div className="relative group">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted group-focus-within:text-primary transition-colors" />
                     <Input
                       {...field}
                       type="password"
                       placeholder="••••••••"
-                      className="pl-10 h-10 bg-slate-50/50 border-slate-200 focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all"
+                      className="pl-10 h-10"
                     />
                   </div>
                 </FormControl>
@@ -137,10 +137,10 @@ export function LoginForm() {
                   <Checkbox
                     checked={field.value}
                     onCheckedChange={(val) => field.onChange(!!val)}
-                    className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                   />
                 </FormControl>
-                <FormLabel className="text-sm font-medium text-slate-600 cursor-pointer">
+                <FormLabel className="text-sm font-medium text-text-muted cursor-pointer">
                   Remember me for 30 days
                 </FormLabel>
               </FormItem>
@@ -155,7 +155,7 @@ export function LoginForm() {
         >
           <Button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold h-10 shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-10 shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30"
             disabled={isLoading}
           >
             {isLoading ? (

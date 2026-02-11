@@ -5,11 +5,12 @@ import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BadgeProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  text?: string;
   className?: string;
 }
 
-export function Badge({ children, className }: BadgeProps) {
+export function Badge({ children, text, className }: BadgeProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -23,7 +24,7 @@ export function Badge({ children, className }: BadgeProps) {
       )}
     >
       <Sparkles className="w-4 h-4 text-primary" aria-hidden="true" />
-      {children}
+      {text || children}
     </motion.div>
   );
 }

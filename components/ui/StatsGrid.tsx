@@ -1,74 +1,46 @@
 "use client";
 
+import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { useRef, useEffect, useState } from "react";
-
-function AnimatedNumber({ value, prefix = "", suffix = "" }: { value: number; prefix?: string; suffix?: string }) {
-    const [count, setCount] = useState(0);
-    const ref = useRef<HTMLSpanElement>(null);
-    const isInView = useInView(ref, { once: true });
-
-    useEffect(() => {
-        if (!isInView) return;
-
-        const duration = 2000;
-        const steps = 60;
-        const increment = value / steps;
-        let current = 0;
-
-        const timer = setInterval(() => {
-            current += increment;
-            if (current >= value) {
-                setCount(value);
-                clearInterval(timer);
-            } else {
-                setCount(Math.floor(current));
-            }
-        }, duration / steps);
-
-        return () => clearInterval(timer);
-    }, [isInView, value]);
-
-    const formatNumber = (num: number) => {
-        if (num >= 1000000) {
-            return (num / 1000000).toFixed(0) + "M";
-        }
-        if (num >= 1000) {
-            return (num / 1000).toFixed(0) + "K";
-        }
-        return num.toLocaleString();
-    };
-
-    return (
-        <span ref={ref}>
-            {prefix}{formatNumber(count)}{suffix}
-        </span>
-    );
-}
+import { AnimatedCounter } from "./AnimatedCounter";
 
 interface StatProps {
     value: number;
+    label: string;
     prefix?: string;
     suffix?: string;
-    label: string;
     delay: number;
 }
 
-function Stat({ value, prefix = "", suffix = "", label, delay }: StatProps) {
+function Stat({ value, label, prefix = "", suffix = "", delay }: StatProps) {
+    const ref = useRef<HTMLDivElement>(null);
+    const isInView = useInView(ref, { once: true, margin: "-50px" });
+
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay }}
-            className="text-center"
+            ref={ref}
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }}
+            className="group relative p-8 rounded-2xl
+                bg-surface/70
+                backdrop-blur-sm
+                border border-border/60
+                hover:border-primary/35
+                hover:shadow-lg hover:shadow-primary/10
+                hover:-translate-y-1
+                transition-all duration-300 cursor-default"
         >
-            <div className="text-4xl md:text-5xl lg:text-6xl font-bold text-heading tracking-tight">
-                <AnimatedNumber value={value} prefix={prefix} suffix={suffix} />
+            <div className="text-3xl md:text-4xl font-bold text-heading tracking-tight mb-2">
+                {prefix}
+                <AnimatedCounter target={value} />
+                {suffix}
             </div>
-            <div className="mt-3 text-sm text-text-muted uppercase tracking-wider font-medium">
+            <div className="text-sm text-text-muted font-medium tracking-wide uppercase">
                 {label}
             </div>
+            {/* Hover gradient accent */}
+            <div className="absolute inset-0 rounded-2xl bg-linear-to-br from-primary/10 to-highlight/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
         </motion.div>
     );
 }
@@ -82,9 +54,9 @@ const stats: Omit<StatProps, "delay">[] = [
 
 export function StatsGrid() {
     return (
-        <section className="py-24 bg-section border-y border-border">
-            <div className="max-w-5xl mx-auto px-6">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
+        <section className="py-28 bg-section border-y border-border/50">
+            <div className="max-w-6xl mx-auto px-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
                     {stats.map((stat, index) => (
                         <Stat key={stat.label} {...stat} delay={index * 0.1} />
                     ))}

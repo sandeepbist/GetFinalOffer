@@ -20,7 +20,7 @@ function PopoverTrigger({
 function PopoverContent({
   className,
   align = "center",
-  sideOffset = 4,
+  sideOffset = 6,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
   return (
@@ -30,7 +30,17 @@ function PopoverContent({
         align={align}
         sideOffset={sideOffset}
         className={cn(
-          "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-md border p-4 shadow-md outline-hidden",
+          "bg-popover text-popover-foreground z-50 w-72",
+          "origin-(--radix-popover-content-transform-origin)",
+          "rounded-xl border border-border/80 p-4",
+          "shadow-[0_16px_48px_-20px_var(--shadow)]",
+          "outline-hidden",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out",
+          "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+          "data-[state=closed]:zoom-out-[0.97] data-[state=open]:zoom-in-[0.97]",
+          "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2",
+          "data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+          "duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
           className
         )}
         {...props}

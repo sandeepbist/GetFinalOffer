@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { signUp } from "@/lib/auth/auth-client";
-import { Loader2, User, Mail, Lock } from "lucide-react";
+import { User, Mail, Lock } from "lucide-react";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 
 export const SignupWizard: React.FC = () => {
   const [fullName, setFullName] = useState("");
@@ -114,10 +115,7 @@ export const SignupWizard: React.FC = () => {
           disabled={loading || !isValid}
         >
           {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating Account...
-            </>
+            <LoadingIndicator label="Creating account..." />
           ) : (
             "Get Started"
           )}

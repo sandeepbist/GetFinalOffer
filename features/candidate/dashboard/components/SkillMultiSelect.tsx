@@ -1,14 +1,10 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import {
   Command,
   CommandInput,
@@ -37,49 +33,47 @@ export const SkillMultiSelect: React.FC<SkillMultiSelectProps> = ({
   const [skillQuery, setSkillQuery] = useState("");
 
   const filteredSkills = useMemo(() => {
-    const q = skillQuery.trim().toLowerCase();
-    const base = q
-      ? availableSkills.filter((s) => s.name.toLowerCase().includes(q))
+    const query = skillQuery.trim().toLowerCase();
+    const results = query
+      ? availableSkills.filter((skill) => skill.name.toLowerCase().includes(query))
       : availableSkills;
-    return base.slice(0, 5);
+    return results.slice(0, 10);
   }, [skillQuery, availableSkills]);
 
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-medium">Skills</Label>
+      <Label className="text-xs font-semibold uppercase tracking-wide text-text-muted">Skills</Label>
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="w-full justify-between text-sm">
+          <Button variant="outline" className="h-auto min-h-10 w-full justify-between border-border/80 bg-background/80 text-sm">
             {selectedSkillIds.length > 0 ? (
               <div className="flex flex-wrap gap-1">
                 {selectedSkillIds.map((id) => {
-                  const skill = availableSkills.find((s) => s.id === id);
+                  const skill = availableSkills.find((entry) => entry.id === id);
                   return skill ? (
                     <Badge
                       key={id}
                       variant="secondary"
-                      className="text-xs cursor-pointer"
+                      className="cursor-pointer border-border/70 bg-highlight text-xs hover:bg-highlight/80"
                       onClick={() =>
-                        onChangeSkillIds(
-                          selectedSkillIds.filter((sid) => sid !== id)
-                        )
+                        onChangeSkillIds(selectedSkillIds.filter((skillId) => skillId !== id))
                       }
                     >
-                      {skill.name} ×
+                      {skill.name} x
                     </Badge>
                   ) : null;
                 })}
               </div>
             ) : (
-              <span className="text-gray-500">Select skills…</span>
+              <span className="text-text-subtle">Select skills...</span>
             )}
-            <ChevronsUpDown className="ml-2 h-4 w-4 text-gray-400" />
+            <ChevronsUpDown className="ml-2 h-4 w-4 text-text-subtle" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-full max-w-sm p-0">
+        <PopoverContent className="w-full max-w-sm rounded-xl border-border/80 p-0">
           <Command>
             <CommandInput
-              placeholder="Search skills…"
+              placeholder="Search skills..."
               value={skillQuery}
               onValueChange={setSkillQuery}
             />
@@ -94,19 +88,13 @@ export const SkillMultiSelect: React.FC<SkillMultiSelectProps> = ({
                       key={skill.id}
                       onSelect={() => {
                         if (selected) {
-                          onChangeSkillIds(
-                            selectedSkillIds.filter((sid) => sid !== skill.id)
-                          );
+                          onChangeSkillIds(selectedSkillIds.filter((skillId) => skillId !== skill.id));
                         } else {
                           onChangeSkillIds([...selectedSkillIds, skill.id]);
                         }
                       }}
                     >
-                      <Check
-                        className={`mr-2 h-4 w-4 ${
-                          selected ? "opacity-100" : "opacity-0"
-                        }`}
-                      />
+                      <Check className={`mr-2 h-4 w-4 ${selected ? "opacity-100" : "opacity-0"}`} />
                       {skill.name}
                     </CommandItem>
                   );
@@ -116,9 +104,7 @@ export const SkillMultiSelect: React.FC<SkillMultiSelectProps> = ({
           </Command>
         </PopoverContent>
       </Popover>
-      <p className="text-xs text-gray-500">
-        Start typing to filter skills; only top 5 shown.
-      </p>
+      <p className="text-xs text-text-subtle">Start typing to filter skills quickly.</p>
     </div>
   );
 };

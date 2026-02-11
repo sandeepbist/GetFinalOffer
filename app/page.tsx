@@ -1,5 +1,3 @@
-"use client";
-
 import { Hero, Features, CTA, Footer } from "@/components/landing";
 import { StatsGrid } from "@/components/ui/StatsGrid";
 import { HowItWorks } from "@/components/ui/HowItWorks";

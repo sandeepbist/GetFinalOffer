@@ -25,7 +25,8 @@ import { getAllPartnerOrganisations } from "@/features/organisation/partner-orga
 import { registerRecruiter } from "@/features/recruiter/recruiter-use-cases";
 import { signUp } from "@/lib/auth/auth-client";
 import type { PartnerOrganisationDTO } from "@/features/organisation/partner-organisations-dto";
-import { User, Building2, Mail, Lock, Loader2 } from "lucide-react";
+import { User, Building2, Mail, Lock } from "lucide-react";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 
 interface RecruiterFormValues {
   fullName: string;
@@ -55,11 +56,13 @@ export default function RecruiterSignupWizard() {
   const router = useRouter();
 
   const [organisations, setOrganisations] = React.useState<PartnerOrganisationDTO[]>([]);
+  const [organisationsLoading, setOrganisationsLoading] = React.useState(true);
 
   useEffect(() => {
     getAllPartnerOrganisations()
       .then(setOrganisations)
-      .catch(() => toast.error("Failed to load organisations"));
+      .catch(() => toast.error("Failed to load organisations"))
+      .finally(() => setOrganisationsLoading(false));
   }, []);
 
   const onSubmit = async (values: RecruiterFormValues) => {
@@ -156,9 +159,12 @@ export default function RecruiterSignupWizard() {
                         field.onChange(val);
                         trigger("email");
                       }}
+                      disabled={organisationsLoading}
                     >
                       <SelectTrigger className="pl-10 h-10">
-                        <SelectValue placeholder="Select your company" />
+                        <SelectValue
+                          placeholder={organisationsLoading ? "Loading organisations..." : "Select your company"}
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         {organisations.map((org) => (
@@ -230,14 +236,13 @@ export default function RecruiterSignupWizard() {
         >
           <Button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || organisationsLoading}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-10 shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30"
           >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating Account...
-              </>
+            {isSubmitting || organisationsLoading ? (
+              <LoadingIndicator
+                label={organisationsLoading ? "Preparing form..." : "Creating account..."}
+              />
             ) : (
               "Sign Up"
             )}

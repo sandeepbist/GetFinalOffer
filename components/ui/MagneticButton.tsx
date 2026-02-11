@@ -104,7 +104,7 @@ export function GradientButton({
     const variantClasses = {
         primary: cn(
             "bg-primary text-primary-foreground",
-            "before:absolute before:inset-0 before:bg-gradient-to-r before:from-blue-600 before:to-blue-500",
+            "before:absolute before:inset-0 before:bg-gradient-to-r before:from-primary before:to-primary/80",
             "before:opacity-0 before:transition-opacity before:duration-300",
             "hover:before:opacity-100"
         ),

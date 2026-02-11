@@ -24,7 +24,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
   const [mounted, setMounted] = useState(false);
 
-  // Load theme from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem("theme") as Theme | null;
     if (stored && ["light", "dark", "system"].includes(stored)) {
@@ -33,23 +32,34 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
-  // Resolve theme and apply to document
   useEffect(() => {
     if (!mounted) return;
 
     const resolved = theme === "system" ? getSystemTheme() : theme;
     setResolvedTheme(resolved);
 
-    // Apply theme class to document
     const root = document.documentElement;
+
+    // 1. Block ALL transitions across the entire page (including header backdrop)
+    root.classList.add("disable-transitions");
+
+    // 2. Swap the theme class
     root.classList.remove("light", "dark");
     root.classList.add(resolved);
-
-    // Set color-scheme for native elements
     root.style.colorScheme = resolved;
+
+    // 3. Force a synchronous reflow — this makes the browser compute
+    //    every element's new styles NOW, so nothing lags behind
+    void root.offsetHeight;
+
+    // 4. Re-enable transitions on the very next animation frame
+    const raf = requestAnimationFrame(() => {
+      root.classList.remove("disable-transitions");
+    });
+
+    return () => cancelAnimationFrame(raf);
   }, [theme, mounted]);
 
-  // Listen for system theme changes when in system mode
   useEffect(() => {
     if (!mounted || theme !== "system") return;
 
@@ -66,11 +76,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setThemeState(newTheme);
     localStorage.setItem("theme", newTheme);
   };
-
-  // Prevent flash by not rendering until mounted
-  if (!mounted) {
-    return null;
-  }
 
   return (
     <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>

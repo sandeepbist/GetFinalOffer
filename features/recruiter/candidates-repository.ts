@@ -1,4 +1,4 @@
-import type { ApiAdapterInterface } from "@/features/common/api/api-local-adapter";
+import type { ApiAdapterInterface, ApiRequestOptions } from "@/features/common/api/api-local-adapter";
 import { ApiResponse } from "@/features/common/api/api-types";
 import type { CandidateSummaryDTO } from "./candidates-dto";
 
@@ -8,7 +8,8 @@ export interface RecruiterCandidateRepository {
     pageSize: number;
     search?: string;
     minYears?: number;
-    company?: string;
+    companyId?: string;
+    options?: ApiRequestOptions;
   }): Promise<
     ApiResponse<{
       data: CandidateSummaryDTO[];
@@ -20,17 +21,17 @@ export interface RecruiterCandidateRepository {
 export const createRecruiterCandidateRepository = (
   api: ApiAdapterInterface
 ): RecruiterCandidateRepository => ({
-  async getCandidates({ page, pageSize, search, minYears, company }) {
+  async getCandidates({ page, pageSize, search, minYears, companyId, options }) {
     const params: Record<string, string> = {
       page: String(page),
       pageSize: String(pageSize),
     };
     if (search) params.search = search;
     if (minYears != null) params.minYears = String(minYears);
-    if (company) params.company = company;
+    if (companyId) params.companyId = companyId;
     return api.get<{
       data: CandidateSummaryDTO[];
       total: number;
-    }>("/recruiter/candidates", params);
+    }>("/recruiter/candidates", params, options);
   },
 });

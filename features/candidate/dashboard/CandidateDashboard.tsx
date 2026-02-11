@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -46,44 +47,62 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 function DashboardSkeleton() {
   return (
-    <main className="max-w-7xl mx-auto space-y-6 px-6 py-8">
-      <div className="space-y-2">
-        <Skeleton className="h-10 w-64 bg-slate-200" />
-        <Skeleton className="h-5 w-48 bg-slate-100" />
+    <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+      <div className="space-y-2.5">
+        <Skeleton className="h-10 w-64 rounded-xl" />
+        <Skeleton className="h-5 w-48" />
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-6 h-fit">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="h-fit space-y-6 rounded-2xl border border-border bg-surface p-6">
           <Skeleton className="h-20 w-20 rounded-full" />
           <Skeleton className="h-10 w-full" />
         </div>
         <div className="lg:col-span-2 space-y-6">
-          <Skeleton className="h-64 w-full rounded-lg" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
         </div>
       </div>
     </main>
   );
 }
 
+
+const dashboardCache: {
+  data: { p: CandidateProfileSummaryDTO | null; c: CompanyDTO[]; s: SkillDTO[]; o: PartnerOrganisationDTO[]; i: CandidateInviteDTO[] } | null;
+  ts: number;
+} = { data: null, ts: 0 };
+const STALE_MS = 30_000;
+
 export default function CandidateDashboard({ user }: { user: TUserAuth }) {
   const router = useRouter();
   const { data: session, error } = authClient.useSession();
 
-  const [profile, setProfile] = useState<CandidateProfileSummaryDTO | null>(null);
-  const [companies, setCompanies] = useState<CompanyDTO[]>([]);
-  const [skills, setSkills] = useState<SkillDTO[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = dashboardCache.data;
+  const [profile, setProfile] = useState<CandidateProfileSummaryDTO | null>(cached?.p ?? null);
+  const [companies, setCompanies] = useState<CompanyDTO[]>(cached?.c ?? []);
+  const [skills, setSkills] = useState<SkillDTO[]>(cached?.s ?? []);
+  const [loading, setLoading] = useState(!cached);
   const [editing, setEditing] = useState(false);
-  const [formVals, setFormVals] = useState({
-    professionalTitle: "",
-    currentRole: "",
-    yearsExperience: "",
-    location: "",
-    about: "",
+  const [formVals, setFormVals] = useState(() => {
+    const p = cached?.p;
+    return p ? {
+      professionalTitle: p.professionalTitle,
+      currentRole: p.currentRole,
+      yearsExperience: String(p.yearsExperience),
+      location: p.location,
+      about: p.bio,
+    } : {
+      professionalTitle: "",
+      currentRole: "",
+      yearsExperience: "",
+      location: "",
+      about: "",
+    };
   });
-  const [selSkills, setSelSkills] = useState<string[]>([]);
-  const [partnerOrgs, setPartnerOrgs] = useState<PartnerOrganisationDTO[]>([]);
+  const [selSkills, setSelSkills] = useState<string[]>(cached?.p?.skillIds ?? []);
+  const [partnerOrgs, setPartnerOrgs] = useState<PartnerOrganisationDTO[]>(cached?.o ?? []);
   const [hiddenOrgs, setHiddenOrgs] = useState<string[]>([]);
-  const [invites, setInvites] = useState<CandidateInviteDTO[]>([]);
+  const [invites, setInvites] = useState<CandidateInviteDTO[]>(cached?.i ?? []);
+  const didFetch = useRef(false);
 
   const getErrorMessage = (err: unknown) => {
     if (err instanceof Error) return err.message;
@@ -97,6 +116,11 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
     ]).then(([p, i]) => {
       setProfile(p);
       setInvites(i);
+      if (dashboardCache.data) {
+        dashboardCache.data.p = p;
+        dashboardCache.data.i = i;
+        dashboardCache.ts = Date.now();
+      }
     });
   };
 
@@ -106,7 +130,17 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
       return;
     }
 
-    if (session?.user) {
+    if (session?.user && !didFetch.current) {
+      didFetch.current = true;
+
+      if (dashboardCache.data && Date.now() - dashboardCache.ts < STALE_MS) {
+        setLoading(false);
+        return;
+      }
+
+      const background = !!dashboardCache.data;
+      if (!background) setLoading(true);
+
       Promise.all([
         getCandidateProfile(),
         getAllCompanies(),
@@ -115,6 +149,8 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
         getCandidateInvites(),
       ])
         .then(([p, c, s, o, i]) => {
+          dashboardCache.data = { p, c, s, o, i };
+          dashboardCache.ts = Date.now();
           setProfile(p);
           setCompanies(c);
           setSkills(s);
@@ -176,7 +212,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
   );
 
   const entries: InterviewProgress[] =
-    profile?.interviewProgress.map((e) => ({
+    (profile?.interviewProgress ?? []).map((e) => ({
       id: e.id,
       companyId: e.companyId,
       position: e.position,
@@ -185,7 +221,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
       status: e.status,
       verificationStatus: e.verificationStatus as VerificationStatus,
       dateCleared: e.dateCleared,
-    })) || [];
+    }));
 
   const handleSaveProgress = async (updated: InterviewProgress[]) => {
     const dto: InterviewProgressEntryDTO[] = updated.map((e) => ({
@@ -274,15 +310,31 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
   const completion = Math.round((filledCount / completionFields.length) * 100);
 
   const skillNames =
-    profile?.skillIds.map(
+    (profile?.skillIds ?? []).map(
       (id) => skills.find((s) => s.id === id)?.name || ""
-    ) || [];
+    );
 
   return (
-    <main className="max-w-7xl mx-auto space-y-6 px-6 py-8">
-      <WelcomeBanner name={user.name} />
+    <motion.main
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className="mx-auto min-h-screen max-w-7xl space-y-6 bg-section px-6 py-8"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <WelcomeBanner name={user.name} />
+      </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+        className="grid grid-cols-1 gap-8 lg:grid-cols-3"
+      >
         <ProfileCard
           name={user.name}
           email={user.email}
@@ -298,28 +350,36 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
           onEdit={() => setEditing(true)}
         />
 
-        <div className="lg:col-span-2 space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          className="lg:col-span-2 space-y-6"
+        >
           {invites.length > 0 && (
-            <Card className="border-blue-100 bg-blue-50/50 shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2 text-blue-900">
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader className="border-b border-primary/15 pb-3">
+                <CardTitle className="text-lg flex items-center gap-2 text-heading">
                   <BellRing className="w-5 h-5" /> Recruiter Invites
                 </CardTitle>
               </CardHeader>
               <CardContent className="grid gap-3">
-                {invites.map((invite) => (
-                  <div
+                {invites.map((invite, idx) => (
+                  <motion.div
                     key={invite.id}
-                    className="flex items-center justify-between p-4 bg-white rounded-xl border border-blue-100 shadow-sm"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, delay: 0.1 + idx * 0.04, ease: [0.22, 1, 0.36, 1] }}
+                    className="flex items-center justify-between rounded-xl border border-border/80 bg-surface/90 p-4"
                   >
                     <div>
-                      <p className="font-bold text-slate-900">
+                      <p className="font-bold text-heading">
                         {invite.organisationName}
                       </p>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm text-text-muted">
                         {invite.recruiterName} wants to connect
                       </p>
-                      <p className="text-xs text-slate-400 mt-1">
+                      <p className="text-xs text-text-subtle mt-1">
                         {new Date(invite.contactedAt).toLocaleDateString()}
                       </p>
                     </div>
@@ -329,7 +389,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="text-slate-500 hover:text-red-600 hover:bg-red-50"
+                          className="text-text-muted hover:text-destructive hover:bg-destructive/10"
                           onClick={() =>
                             handleInviteResponse(invite.id, "rejected")
                           }
@@ -338,7 +398,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
                         </Button>
                         <Button
                           size="sm"
-                          className="bg-blue-600 hover:bg-blue-700"
+                          className="min-w-[92px]"
                           onClick={() =>
                             handleInviteResponse(invite.id, "accepted")
                           }
@@ -355,7 +415,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
                         {invite.status}
                       </Badge>
                     )}
-                  </div>
+                  </motion.div>
                 ))}
               </CardContent>
             </Card>
@@ -367,28 +427,40 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
             isLocked={!isProfileComplete}
             onSave={handleSaveProgress}
           />
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {profile && (
-        <HideOrganisations
-          partnerOrgs={partnerOrgs}
-          hiddenOrgs={hiddenOrgs}
-          onToggle={toggleHidden}
-          onSave={saveHidden}
-        />
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <HideOrganisations
+            partnerOrgs={partnerOrgs}
+            hiddenOrgs={hiddenOrgs}
+            onToggle={toggleHidden}
+            onSave={saveHidden}
+          />
+        </motion.div>
       )}
 
       {profile && (
-        <VerifyCallout
-          context="profile"
-          status={profile.verificationStatus ?? "unverified"}
-          onSubmit={handleProfileVerify}
-        />
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <VerifyCallout
+            context="profile"
+            status={profile.verificationStatus ?? "unverified"}
+            onSubmit={handleProfileVerify}
+          />
+        </motion.div>
       )}
 
       <Dialog open={editing} onOpenChange={setEditing}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <ProfileProfessionalForm
             values={formVals}
             availableSkills={skills}
@@ -402,6 +474,6 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
           />
         </DialogContent>
       </Dialog>
-    </main>
+    </motion.main>
   );
 }

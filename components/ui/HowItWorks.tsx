@@ -1,129 +1,118 @@
 "use client";
 
-import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { Upload, Shield, Search, Inbox, LucideIcon } from "lucide-react";
+import { motion, useInView } from "framer-motion";
+import { SectionHeader } from "@/components/landing/SectionHeader";
+import { Shield, Search, TrendingUp, FileCheck } from "lucide-react";
 
-interface StepProps {
+const steps = [
+    {
+        icon: Shield,
+        title: "Verify Once",
+        description: "Share your interview performance across companies. No more repeating the same whiteboard problems.",
+    },
+    {
+        icon: Search,
+        title: "Get Discovered",
+        description: "Top companies find you based on verified skills and experience, not keyword-stuffed resumes.",
+    },
+    {
+        icon: TrendingUp,
+        title: "Receive Offers",
+        description: "Companies compete for you with direct compensation offers. No recruiter middlemen.",
+    },
+    {
+        icon: FileCheck,
+        title: "Negotiate & Accept",
+        description: "Compare offers side by side with full transparency. Accept the best one on your terms.",
+    },
+];
+
+function Step({
+    step,
+    title,
+    description,
+    icon: Icon,
+    isLast,
+}: {
     step: number;
-    icon: LucideIcon;
     title: string;
     description: string;
-    isLast?: boolean;
-}
-
-function Step({ step, icon: Icon, title, description, isLast = false }: StepProps) {
+    icon: React.ElementType;
+    isLast: boolean;
+}) {
     const ref = useRef<HTMLDivElement>(null);
-    const isInView = useInView(ref, { once: true, amount: 0.5 });
+    const isInView = useInView(ref, { once: true, margin: "-80px" });
 
     return (
         <motion.div
             ref={ref}
-            initial={{ opacity: 0, y: 40 }}
-            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-            transition={{ duration: 0.6, delay: step * 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className="relative flex flex-col items-center text-center group"
+            initial={{ opacity: 0, x: -30 }}
+            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            transition={{
+                duration: 0.5,
+                delay: step * 0.15,
+                ease: [0.16, 1, 0.3, 1],
+            }}
+            className="relative flex gap-6 md:gap-8"
         >
-            <div className="relative z-10 mb-6">
-                <motion.div
-                    initial={{ scale: 0.8 }}
-                    animate={isInView ? { scale: 1 } : { scale: 0.8 }}
-                    transition={{ duration: 0.5, delay: step * 0.15 + 0.2 }}
-                    className="w-20 h-20 rounded-2xl bg-white border border-slate-200 shadow-lg flex items-center justify-center relative overflow-hidden group-hover:border-blue-200 group-hover:shadow-blue-100/50 transition-all duration-300"
-                >
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <Icon className="w-8 h-8 text-slate-700 group-hover:text-blue-600 transition-colors duration-300 relative z-10" />
-                </motion.div>
-
-                <motion.div
-                    initial={{ scale: 0 }}
-                    animate={isInView ? { scale: 1 } : { scale: 0 }}
-                    transition={{ duration: 0.4, delay: step * 0.15 + 0.3, type: "spring" }}
-                    className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-slate-900 text-white text-sm font-bold flex items-center justify-center shadow-lg"
-                >
-                    {step}
-                </motion.div>
+            {/* Timeline column */}
+            <div className="flex flex-col items-center">
+                {/* Gradient number badge */}
+                <div className="relative shrink-0 w-12 h-12 rounded-2xl bg-linear-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/25">
+                    <span className="text-white text-sm font-bold">{step}</span>
+                </div>
+                {/* Connecting line */}
+                {!isLast && (
+                    <motion.div
+                        initial={{ scaleY: 0 }}
+                        animate={isInView ? { scaleY: 1 } : {}}
+                        transition={{ duration: 0.6, delay: step * 0.15 + 0.3 }}
+                        className="flex-1 w-px bg-linear-to-b from-primary/45 to-transparent my-3 origin-top min-h-[40px]"
+                    />
+                )}
             </div>
 
-            <h3 className="text-lg font-bold text-slate-900 mb-2">{title}</h3>
-            <p className="text-sm text-slate-500 max-w-xs leading-relaxed">{description}</p>
-
-            {!isLast && (
-                <div className="hidden lg:block absolute top-10 left-[calc(50%+48px)] w-[calc(100%-96px)]">
-                    <motion.div
-                        initial={{ scaleX: 0 }}
-                        animate={isInView ? { scaleX: 1 } : { scaleX: 0 }}
-                        transition={{ duration: 0.6, delay: step * 0.15 + 0.4 }}
-                        className="h-px bg-gradient-to-r from-slate-200 via-slate-300 to-slate-200 origin-left"
-                    />
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-                        transition={{ duration: 0.3, delay: step * 0.15 + 0.8 }}
-                        className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 border-r-2 border-t-2 border-slate-300 transform rotate-45"
-                    />
+            {/* Content card */}
+            <div className="pb-12 flex-1">
+                <div className="p-6 rounded-2xl bg-surface/70 border border-border/60 hover:border-primary/30 transition-colors duration-300">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-xl bg-primary/12 flex items-center justify-center">
+                            <Icon className="w-5 h-5 text-primary" aria-hidden="true" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-heading">{title}</h3>
+                    </div>
+                    <p className="text-text-muted leading-relaxed">{description}</p>
                 </div>
-            )}
+            </div>
         </motion.div>
     );
 }
 
 export function HowItWorks() {
     const sectionRef = useRef<HTMLDivElement>(null);
-    const isInView = useInView(sectionRef, { once: true, amount: 0.2 });
-
-    const steps = [
-        {
-            icon: Upload,
-            title: "Verify Identity",
-            description: "Connect your email and let our system validate your employment history using DKIM signatures",
-        },
-        {
-            icon: Shield,
-            title: "Build Profile",
-            description: "Your verified experience becomes a portable, cryptographically-secured credential",
-        },
-        {
-            icon: Search,
-            title: "Get Discovered",
-            description: "Our hybrid search matches you with companies looking for your exact skills and level",
-        },
-        {
-            icon: Inbox,
-            title: "Receive Offers",
-            description: "Skip technical rounds entirely. Companies compete for you with direct compensation offers",
-        },
-    ];
 
     return (
-        <section ref={sectionRef} className="py-32 px-6 bg-white relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-slate-50/50 via-transparent to-slate-50/50" />
+        <section
+            ref={sectionRef}
+            id="how-it-works"
+            className="py-32 px-6 bg-section-alt"
+        >
+            <div className="max-w-3xl mx-auto">
+                <SectionHeader
+                    badge="How it Works"
+                    title="Four Steps to Your Best Offer"
+                    subtitle="A streamlined process that puts engineers in control of their career trajectory."
+                />
 
-            <div className="max-w-6xl mx-auto relative z-10">
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-                    transition={{ duration: 0.6 }}
-                    className="text-center mb-20"
-                >
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-6">
-                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                        <span className="text-sm font-semibold text-blue-700">How It Works</span>
-                    </div>
-                    <h2 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight mb-4">
-                        From Verified to Hired
-                    </h2>
-                    <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-                        Four simple steps to skip interviews forever and receive competing offers directly
-                    </p>
-                </motion.div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-0">
+                <div className="mt-16">
                     {steps.map((step, index) => (
                         <Step
                             key={step.title}
                             step={index + 1}
-                            {...step}
+                            icon={step.icon}
+                            title={step.title}
+                            description={step.description}
                             isLast={index === steps.length - 1}
                         />
                     ))}

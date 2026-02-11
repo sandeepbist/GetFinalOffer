@@ -1,115 +1,64 @@
 "use client";
 
-import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { Users, Zap, TrendingUp, Building2, LucideIcon } from "lucide-react";
+import { motion, useInView } from "framer-motion";
 import { AnimatedCounter } from "./AnimatedCounter";
-import { cn } from "@/lib/utils";
 
-interface StatCardProps {
-    icon: LucideIcon;
+interface StatProps {
     value: number;
-    suffix?: string;
     label: string;
-    delay?: number;
-    color?: "blue" | "green" | "purple" | "orange";
+    prefix?: string;
+    suffix?: string;
+    delay: number;
 }
 
-const colorMap = {
-    blue: {
-        bg: "bg-blue-50",
-        icon: "text-blue-600",
-        border: "border-blue-100",
-        glow: "shadow-blue-100",
-    },
-    green: {
-        bg: "bg-green-50",
-        icon: "text-green-600",
-        border: "border-green-100",
-        glow: "shadow-green-100",
-    },
-    purple: {
-        bg: "bg-purple-50",
-        icon: "text-purple-600",
-        border: "border-purple-100",
-        glow: "shadow-purple-100",
-    },
-    orange: {
-        bg: "bg-orange-50",
-        icon: "text-orange-600",
-        border: "border-orange-100",
-        glow: "shadow-orange-100",
-    },
-};
-
-function StatCard({ icon: Icon, value, suffix = "", label, delay = 0, color = "blue" }: StatCardProps) {
+function Stat({ value, label, prefix = "", suffix = "", delay }: StatProps) {
     const ref = useRef<HTMLDivElement>(null);
-    const isInView = useInView(ref, { once: true, amount: 0.5 });
-    const colors = colorMap[color];
+    const isInView = useInView(ref, { once: true, margin: "-50px" });
 
     return (
         <motion.div
             ref={ref}
-            initial={{ opacity: 0, y: 40, scale: 0.95 }}
-            animate={isInView ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 40, scale: 0.95 }}
-            transition={{ duration: 0.6, delay, ease: [0.16, 1, 0.3, 1] }}
-            className={cn(
-                "relative group p-6 bg-white rounded-2xl border",
-                colors.border,
-                "shadow-lg hover:shadow-xl transition-all duration-500",
-                colors.glow
-            )}
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }}
+            className="group relative p-8 rounded-2xl
+                bg-surface/70
+                backdrop-blur-sm
+                border border-border/60
+                hover:border-primary/35
+                hover:shadow-lg hover:shadow-primary/10
+                hover:-translate-y-1
+                transition-all duration-300 cursor-default"
         >
-            <div className="absolute inset-0 bg-gradient-to-br from-white to-slate-50/50 rounded-2xl" />
-
-            <div className="relative z-10">
-                <div className={cn(
-                    "w-12 h-12 rounded-xl flex items-center justify-center mb-4",
-                    colors.bg,
-                    "group-hover:scale-110 transition-transform duration-300"
-                )}>
-                    <Icon className={cn("w-6 h-6", colors.icon)} />
-                </div>
-
-                <div className="text-4xl font-bold text-slate-900 tracking-tight mb-1">
-                    <AnimatedCounter target={value} suffix={suffix} duration={2.5} />
-                </div>
-
-                <div className="text-sm text-slate-500 font-medium">{label}</div>
+            <div className="text-3xl md:text-4xl font-bold text-heading tracking-tight mb-2">
+                {prefix}
+                <AnimatedCounter target={value} />
+                {suffix}
             </div>
-
-            <div className={cn(
-                "absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500",
-                "bg-gradient-to-br",
-                color === "blue" && "from-blue-400/20 to-transparent",
-                color === "green" && "from-green-400/20 to-transparent",
-                color === "purple" && "from-purple-400/20 to-transparent",
-                color === "orange" && "from-orange-400/20 to-transparent"
-            )} />
+            <div className="text-sm text-text-muted font-medium tracking-wide uppercase">
+                {label}
+            </div>
+            {/* Hover gradient accent */}
+            <div className="absolute inset-0 rounded-2xl bg-linear-to-br from-primary/10 to-highlight/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
         </motion.div>
     );
 }
 
+const stats: Omit<StatProps, "delay">[] = [
+    { value: 8247, label: "Engineers Verified" },
+    { value: 847, suffix: "K", label: "Hours Saved" },
+    { value: 142, prefix: "$", suffix: "M", label: "Offers Negotiated" },
+    { value: 34, suffix: "%", label: "Avg Salary Increase" },
+];
+
 export function StatsGrid() {
-    const stats = [
-        { icon: Users, value: 10000, suffix: "+", label: "Engineers Verified", color: "blue" as const },
-        { icon: Zap, value: 98, suffix: "%", label: "Faster Hiring", color: "green" as const },
-        { icon: TrendingUp, value: 50, suffix: "K+", label: "Avg Salary Increase", color: "purple" as const },
-        { icon: Building2, value: 500, suffix: "+", label: "Top Companies", color: "orange" as const },
-    ];
-
     return (
-        <section className="py-24 px-6 bg-slate-50/50 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-white via-transparent to-white" />
-
-            <div className="max-w-6xl mx-auto relative z-10">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <section className="py-28 bg-section border-y border-border/50">
+            <div className="max-w-6xl mx-auto px-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
                     {stats.map((stat, index) => (
-                        <StatCard
-                            key={stat.label}
-                            {...stat}
-                            delay={index * 0.1}
-                        />
+                        <Stat key={stat.label} {...stat} delay={index * 0.1} />
                     ))}
                 </div>
             </div>

@@ -103,14 +103,14 @@ export function GradientButton({
 
     const variantClasses = {
         primary: cn(
-            "bg-slate-900 text-white",
-            "before:absolute before:inset-0 before:bg-gradient-to-r before:from-blue-600 before:to-blue-500",
+            "bg-primary text-primary-foreground",
+            "before:absolute before:inset-0 before:bg-gradient-to-r before:from-primary before:to-primary/80",
             "before:opacity-0 before:transition-opacity before:duration-300",
             "hover:before:opacity-100"
         ),
         secondary: cn(
-            "bg-white text-slate-900 border border-slate-200",
-            "hover:border-blue-200 hover:bg-blue-50/50"
+            "bg-surface text-heading border border-border",
+            "hover:border-primary/50 hover:bg-highlight"
         ),
     };
 

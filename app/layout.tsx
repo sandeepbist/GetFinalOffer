@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Sora } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
 import { Toaster } from "@/components/ui/sonner";
-import { getCurrentSession } from "@/lib/auth/current-user";
+import { ThemeProvider, MotionProvider } from "@/components/providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,7 +15,25 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const sora = Sora({
+  variable: "--font-sora",
+  subsets: ["latin"],
+});
+
 const baseUrl = "https://getfinaloffer.vercel.app";
+const themeInitScript = `
+(() => {
+  try {
+    const stored = localStorage.getItem("theme");
+    const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const resolved = stored === "light" || stored === "dark" ? stored : (systemDark ? "dark" : "light");
+    const root = document.documentElement;
+    root.classList.remove("light", "dark");
+    root.classList.add(resolved);
+    root.style.colorScheme = resolved;
+  } catch {}
+})();
+`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -93,28 +111,35 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c1222" },
   ],
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  await getCurrentSession();
-
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-zinc-950`}
+        className={`${geistSans.variable} ${geistMono.variable} ${sora.variable} bg-background text-foreground antialiased font-sans`}
       >
-        <Header />
-        <main>{children}</main>
-        <Toaster />
+        <ThemeProvider>
+          <MotionProvider>
+            <div className="min-h-screen">
+              <Header />
+              {children}
+              <Toaster />
+            </div>
+          </MotionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

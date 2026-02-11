@@ -8,6 +8,7 @@ export const paginationSchema = z.object({
 export const candidateSearchSchema = paginationSchema.extend({
     search: z.string().max(500).default(""),
     minYears: z.coerce.number().int().min(0).max(50).default(0),
+    companyId: z.string().trim().min(1).max(128).optional(),
 });
 
 export const verificationActionSchema = z.enum(["profile", "interview"]);

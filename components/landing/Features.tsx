@@ -12,7 +12,7 @@ import { FeatureShowcase } from "./FeatureShowcase";
 
 export function Features() {
     return (
-        <section id="features" className="py-24 lg:py-32 px-6 bg-white relative">
+        <section id="features" className="py-24 lg:py-32 px-6 bg-section relative">
             <div className="max-w-7xl mx-auto">
                 <SectionHeader
                     badge="Core Features"

@@ -118,7 +118,7 @@ export function GridBackground({ className = "" }: { className?: string }) {
             <div
                 className="absolute inset-0"
                 style={{
-                    background: "radial-gradient(ellipse at center, transparent 0%, white 70%)",
+                    background: "radial-gradient(ellipse at center, transparent 0%, var(--section) 70%)",
                 }}
             />
         </div>

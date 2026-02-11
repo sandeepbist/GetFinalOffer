@@ -13,7 +13,13 @@ scripts/
 
 # testing
 /coverage
-
+/e2e
+/playwright-report
+/playwright-video
+/test-results
+playwright-screenshots
+test-results.json
+playwright.config.ts
 # next.js
 /.next/
 /out/

@@ -14,19 +14,25 @@ export default function ScrollWrapper({ children }: ScrollWrapperProps) {
   useEffect(() => {
     if (!containerRef.current) return;
 
+    const isCoarsePointer = window.matchMedia("(hover: none), (pointer: coarse)").matches;
+    if (isCoarsePointer) return;
+
     scrollRef.current = new LocomotiveScroll({
       lenisOptions: {
         lerp: 0.08,
-        duration: 1.2,
         smoothWheel: true,
-        wheelMultiplier: 1,
-        touchMultiplier: 2,
+        wheelMultiplier: 0.85,
+        touchMultiplier: 1,
+        syncTouch: false,
+        orientation: "vertical",
+        gestureOrientation: "vertical",
         infinite: false,
       },
     });
 
     return () => {
       scrollRef.current?.destroy();
+      scrollRef.current = null;
     };
   }, []);
 

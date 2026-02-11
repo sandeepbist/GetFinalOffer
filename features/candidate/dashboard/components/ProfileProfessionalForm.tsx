@@ -4,6 +4,7 @@ import React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { SkillMultiSelect, SkillDTO } from "./SkillMultiSelect";
 
 interface ProfessionalValues {
@@ -38,56 +39,70 @@ export const ProfileProfessionalForm: React.FC<
   onCancel,
 }) => {
   return (
-    <div className="space-y-6 p-4">
+    <div className="space-y-6 p-1">
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-1">
-          <Label htmlFor="professionalTitle">Professional Title</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="professionalTitle" className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Professional Title
+          </Label>
           <Input
             id="professionalTitle"
             name="professionalTitle"
             value={values.professionalTitle}
             onChange={onChangeField}
+            placeholder="Senior Software Engineer"
           />
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="currentRole">Current Role</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="currentRole" className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Current Role
+          </Label>
           <Input
             id="currentRole"
             name="currentRole"
             value={values.currentRole}
             onChange={onChangeField}
+            placeholder="Frontend Engineer"
           />
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="yearsExperience">Years of Experience</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="yearsExperience" className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Years of Experience
+          </Label>
           <Input
             id="yearsExperience"
             name="yearsExperience"
             type="number"
             value={values.yearsExperience}
             onChange={onChangeField}
+            placeholder="4"
           />
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="location">Location</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="location" className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Location
+          </Label>
           <Input
             id="location"
             name="location"
             value={values.location}
             onChange={onChangeField}
+            placeholder="San Francisco, CA"
           />
         </div>
       </div>
 
-      <div className="space-y-1">
-        <Label htmlFor="about">About (Bio)</Label>
-        <textarea
+      <div className="space-y-1.5">
+        <Label htmlFor="about" className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+          About
+        </Label>
+        <Textarea
           id="about"
           name="about"
           rows={3}
-          className="w-full rounded border p-2 text-sm"
           value={values.about}
           onChange={onChangeField}
+          placeholder="Highlight your strengths, product impact, and interview history."
         />
       </div>
 
@@ -97,7 +112,7 @@ export const ProfileProfessionalForm: React.FC<
         onChangeSkillIds={onChangeSkillIds}
       />
 
-      <div className="flex justify-end space-x-2 pt-4 border-t">
+      <div className="flex justify-end space-x-2 border-t border-border/75 pt-4">
         <Button variant="outline" onClick={onCancel}>
           Cancel
         </Button>

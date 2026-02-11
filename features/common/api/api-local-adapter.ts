@@ -1,11 +1,15 @@
 import type { ApiResponse } from "./api-types";
 
+export interface ApiRequestOptions {
+  signal?: AbortSignal;
+}
+
 export interface ApiAdapterInterface {
-  get: <T>(url: string, params?: any) => Promise<ApiResponse<T>>;
-  post: <T>(url: string, data: any) => Promise<ApiResponse<T>>;
-  put: <T>(url: string, data: any) => Promise<ApiResponse<T>>;
-  patch: <T>(url: string, data: any) => Promise<ApiResponse<T>>;
-  delete: <T>(url: string, data?: any) => Promise<ApiResponse<T>>;
+  get: <T>(url: string, params?: any, options?: ApiRequestOptions) => Promise<ApiResponse<T>>;
+  post: <T>(url: string, data: any, options?: ApiRequestOptions) => Promise<ApiResponse<T>>;
+  put: <T>(url: string, data: any, options?: ApiRequestOptions) => Promise<ApiResponse<T>>;
+  patch: <T>(url: string, data: any, options?: ApiRequestOptions) => Promise<ApiResponse<T>>;
+  delete: <T>(url: string, data?: any, options?: ApiRequestOptions) => Promise<ApiResponse<T>>;
 }
 
 export class ApiLocalAdapter implements ApiAdapterInterface {
@@ -21,15 +25,16 @@ export class ApiLocalAdapter implements ApiAdapterInterface {
     const ok = response.ok;
 
     try {
-      const data = await response.json();
+      const json = await response.json();
       if (!ok) {
         return {
           ok,
           status,
           statusText,
-          error: data,
+          error: json.error || json,
         };
       }
+      const data = json.data !== undefined ? json.data : json;
       return {
         ok,
         status,
@@ -46,7 +51,7 @@ export class ApiLocalAdapter implements ApiAdapterInterface {
     }
   }
 
-  async get<T>(url: string, params?: any): Promise<ApiResponse<T>> {
+  async get<T>(url: string, params?: any, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
     const queryString = params
       ? "?" + new URLSearchParams(params).toString()
       : "";
@@ -55,49 +60,54 @@ export class ApiLocalAdapter implements ApiAdapterInterface {
       headers: {
         "Content-Type": "application/json",
       },
+      signal: options?.signal,
     });
     return this.handleResponse<T>(response);
   }
 
-  async post<T>(url: string, data: any): Promise<ApiResponse<T>> {
+  async post<T>(url: string, data: any, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
     const isFormData = data instanceof FormData;
     const response = await fetch(`${this.baseURL}${url}`, {
       method: "POST",
       headers: isFormData ? {} : { "Content-Type": "application/json" },
       body: isFormData ? data : JSON.stringify(data),
+      signal: options?.signal,
     });
     return this.handleResponse<T>(response);
   }
 
-  async put<T>(url: string, data: any): Promise<ApiResponse<T>> {
+  async put<T>(url: string, data: any, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
     const response = await fetch(`${this.baseURL}${url}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(data),
+      signal: options?.signal,
     });
     return this.handleResponse<T>(response);
   }
 
-  async patch<T>(url: string, data: any): Promise<ApiResponse<T>> {
+  async patch<T>(url: string, data: any, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
     const response = await fetch(`${this.baseURL}${url}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(data),
+      signal: options?.signal,
     });
     return this.handleResponse<T>(response);
   }
 
-  async delete<T>(url: string, data?: any): Promise<ApiResponse<T>> {
+  async delete<T>(url: string, data?: any, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
     const response = await fetch(`${this.baseURL}${url}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
       },
       ...(data && { body: JSON.stringify(data) }),
+      signal: options?.signal,
     });
     return this.handleResponse<T>(response);
   }

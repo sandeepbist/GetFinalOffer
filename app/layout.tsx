@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Sora } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
 import { Toaster } from "@/components/ui/sonner";
-import { getCurrentSession } from "@/lib/auth/current-user";
 import { ThemeProvider, MotionProvider } from "@/components/providers";
 
 const geistSans = Geist({
@@ -16,7 +15,25 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const sora = Sora({
+  variable: "--font-sora",
+  subsets: ["latin"],
+});
+
 const baseUrl = "https://getfinaloffer.vercel.app";
+const themeInitScript = `
+(() => {
+  try {
+    const stored = localStorage.getItem("theme");
+    const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const resolved = stored === "light" || stored === "dark" ? stored : (systemDark ? "dark" : "light");
+    const root = document.documentElement;
+    root.classList.remove("light", "dark");
+    root.classList.add(resolved);
+    root.style.colorScheme = resolved;
+  } catch {}
+})();
+`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -101,23 +118,26 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  await getCurrentSession();
-
   return (
-    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+        className={`${geistSans.variable} ${geistMono.variable} ${sora.variable} bg-background text-foreground antialiased font-sans`}
       >
         <ThemeProvider>
           <MotionProvider>
-            <Header />
-            <main>{children}</main>
-            <Toaster />
+            <div className="min-h-screen">
+              <Header />
+              {children}
+              <Toaster />
+            </div>
           </MotionProvider>
         </ThemeProvider>
       </body>

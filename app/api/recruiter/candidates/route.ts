@@ -34,7 +34,8 @@ export async function GET(req: NextRequest) {
       return ApiErrors.validationError(errors);
     }
 
-    const { search, minYears, page, pageSize } = parsed;
+    const { search, minYears, page, pageSize, companyId: parsedCompanyId } = parsed;
+    const companyId = parsedCompanyId ?? req.nextUrl.searchParams.get("company") ?? undefined;
 
     const [recruiter] = await db
       .select({ organisationId: gfoRecruitersTable.organisationId })
@@ -48,6 +49,7 @@ export async function GET(req: NextRequest) {
     const result = await searchCandidatesHybrid(search, page, pageSize, {
       minYears,
       recruiterOrgId: recruiter.organisationId,
+      companyId,
     });
 
     return successResponse(result);

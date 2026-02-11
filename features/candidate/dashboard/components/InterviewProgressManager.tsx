@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { motion } from "framer-motion";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -39,10 +40,10 @@ export const InterviewProgressManager: React.FC<
 
   return (
     <>
-      <Card className="border-border shadow-sm relative overflow-hidden bg-surface">
+      <Card className="relative overflow-hidden border-border/80 bg-surface">
         {isLocked && (
-          <div className="absolute inset-0 z-10 bg-surface/60 backdrop-blur-[1px] flex flex-col items-center justify-center p-6 text-center">
-            <div className="bg-surface p-4 rounded-full shadow-lg mb-4 ring-1 ring-border">
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface/65 p-6 text-center backdrop-blur-[1px]">
+            <div className="mb-4 rounded-full bg-surface p-4 shadow-lg ring-1 ring-border">
               <Lock className="w-6 h-6 text-text-muted" />
             </div>
             <h3 className="font-semibold text-heading">
@@ -55,7 +56,7 @@ export const InterviewProgressManager: React.FC<
           </div>
         )}
 
-        <CardHeader className="flex flex-row justify-between items-center border-b border-border bg-highlight py-4">
+        <CardHeader className="flex flex-row items-center justify-between border-b border-border/70 bg-highlight/60 py-4">
           <h3 className="text-lg font-semibold text-heading">
             Interview Progress
           </h3>
@@ -64,7 +65,7 @@ export const InterviewProgressManager: React.FC<
             variant="outline"
             onClick={openEditor}
             disabled={isLocked}
-            className="bg-surface"
+            className="border-border/80 bg-surface"
           >
             {interviewProgress.length ? (
               <Pencil size={14} className="mr-2" />
@@ -74,10 +75,10 @@ export const InterviewProgressManager: React.FC<
             {interviewProgress.length ? "Edit History" : "Add Interview"}
           </Button>
         </CardHeader>
-        <CardContent className="space-y-3 pt-6 min-h-[200px]">
+        <CardContent className="min-h-[200px] space-y-3 pt-6">
           {interviewProgress.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 text-center border-2 border-dashed border-border rounded-xl">
-              <div className="p-3 bg-highlight rounded-full mb-3">
+            <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border py-10 text-center">
+              <div className="mb-3 rounded-full bg-highlight p-3">
                 <Plus className="w-6 h-6 text-text-subtle" />
               </div>
               <p className="text-sm font-medium text-text">
@@ -89,21 +90,24 @@ export const InterviewProgressManager: React.FC<
               </p>
             </div>
           ) : (
-            interviewProgress.map((e) => {
+            interviewProgress.map((e, idx) => {
               const company =
                 availableCompanies.find((c) => c.id === e.companyId)?.name ||
                 "Unknown";
               return (
-                <div
+                <motion.div
                   key={e.id}
-                  className="flex items-center justify-between p-4 border border-border rounded-xl bg-surface hover:border-primary/50 transition-colors shadow-sm"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: idx * 0.05, ease: [0.22, 1, 0.36, 1] }}
+                  className="flex items-center justify-between rounded-xl border border-border/80 bg-highlight/45 p-4"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-heading">
                         {company}
                       </span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-highlight text-text border border-border">
+                      <span className="rounded-full border border-border bg-surface px-2 py-0.5 text-xs text-text">
                         {e.roundsCleared}/{e.totalRounds} Rounds
                       </span>
                     </div>
@@ -124,7 +128,7 @@ export const InterviewProgressManager: React.FC<
                       });
                     }}
                   />
-                </div>
+                </motion.div>
               );
             })
           )}
@@ -133,7 +137,7 @@ export const InterviewProgressManager: React.FC<
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="w-full max-w-2xl">
-          <h3 className="text-xl font-bold text-heading mb-4">Manage Interview Progress</h3>
+          <h3 className="mb-4 text-xl font-bold text-heading">Manage Interview Progress</h3>
           <div className="space-y-4 max-h-[60vh] overflow-auto pr-2">
             {edited.map((e, idx) => (
               <EditorItem
@@ -153,7 +157,7 @@ export const InterviewProgressManager: React.FC<
             ))}
             <Button
               variant="outline"
-              className="w-full border-dashed border-2 py-6 text-text-muted hover:text-primary hover:border-primary/50 hover:bg-primary/5"
+              className="w-full border-2 border-dashed py-6 text-text-muted hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
               onClick={() =>
                 setEdited([
                   ...edited,
@@ -173,11 +177,11 @@ export const InterviewProgressManager: React.FC<
               <Plus className="mr-2 h-4 w-4" /> Add Another Interview
             </Button>
           </div>
-          <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-border">
+          <div className="mt-6 flex justify-end space-x-3 border-t border-border/75 pt-4">
             <Button variant="ghost" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={save} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Button onClick={save}>
               Save Changes
             </Button>
           </div>

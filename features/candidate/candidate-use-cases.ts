@@ -77,6 +77,10 @@ export async function uploadCandidateResume(
     return json.resumeUrl;
   }
 
+  if (isResumeUploadEnvelope(json)) {
+    return json.data.resumeUrl;
+  }
+
   return null;
 }
 
@@ -86,6 +90,19 @@ function isResumeUploadResponse(data: unknown): data is ResumeUploadResponseDTO 
     data !== null &&
     "resumeUrl" in data &&
     typeof (data as ResumeUploadResponseDTO).resumeUrl === "string"
+  );
+}
+
+function isResumeUploadEnvelope(
+  data: unknown
+): data is { success: true; data: ResumeUploadResponseDTO } {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "success" in data &&
+    (data as { success?: unknown }).success === true &&
+    "data" in data &&
+    isResumeUploadResponse((data as { data?: unknown }).data)
   );
 }
 
@@ -114,7 +131,7 @@ export async function requestCandidateVerification(
   }
 
   const res = await apiAdapter.post<VerificationResponseDTO>(
-    "/api/verification/candidate",
+    "/verification/candidate",
     form
   );
 

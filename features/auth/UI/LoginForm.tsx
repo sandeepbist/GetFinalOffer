@@ -14,9 +14,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Lock, Mail, Loader2 } from "lucide-react";
+import { Lock, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { signIn } from "@/lib/auth/auth-client";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 
 interface LoginFormValues {
   email: string;
@@ -112,7 +113,7 @@ export function LoginForm() {
                     <Input
                       {...field}
                       type="password"
-                      placeholder="••••••••"
+                      placeholder="Enter password"
                       className="pl-10 h-10"
                     />
                   </div>
@@ -159,10 +160,7 @@ export function LoginForm() {
             disabled={isLoading}
           >
             {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing In...
-              </>
+              <LoadingIndicator label="Signing in..." />
             ) : (
               "Sign In"
             )}

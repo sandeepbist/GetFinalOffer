@@ -20,13 +20,13 @@ export default function AuthPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 0.5 }}
           transition={{ duration: 1 }}
-          className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-500/10 blur-3xl"
+          className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-primary/18 blur-3xl"
         />
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 0.5 }}
           transition={{ duration: 1, delay: 0.2 }}
-          className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] rounded-full bg-purple-500/10 blur-3xl"
+          className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] rounded-full bg-highlight/70 blur-3xl"
         />
       </div>
 
@@ -57,7 +57,7 @@ export default function AuthPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <Card className="border-border shadow-xl bg-surface/90 backdrop-blur-sm overflow-hidden">
+          <Card className="border-border/70 shadow-xl bg-surface/90 backdrop-blur-sm overflow-hidden">
             <CardContent className="p-6 pt-8 space-y-6 min-h-[420px]">
 
               {mode === "signup" && (

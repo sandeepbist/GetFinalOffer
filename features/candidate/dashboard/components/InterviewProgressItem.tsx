@@ -45,19 +45,21 @@ export const InterviewProgressItem: React.FC<InterviewProgressItemProps> = ({
   onUpdate,
 }) => {
   return (
-    <div className="relative mb-4 rounded-lg border p-4">
+    <div className="relative mb-4 rounded-xl border border-border/80 bg-highlight/45 p-4">
       <button
         type="button"
         onClick={() => onRemove(index)}
-        className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
+        className="absolute right-2 top-2 rounded-md p-1 text-text-subtle transition-colors hover:bg-destructive/10 hover:text-destructive"
         aria-label="Remove"
       >
         <X className="h-4 w-4" />
       </button>
 
       <div className="space-y-4">
-        <div className="space-y-1">
-          <Label htmlFor={`company-${index}`}>Company</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor={`company-${index}`} className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Company
+          </Label>
           <SingleCompanySelect
             availableCompanies={availableInterviewCompanies}
             selectedCompanyId={entry.companyId}
@@ -65,8 +67,10 @@ export const InterviewProgressItem: React.FC<InterviewProgressItemProps> = ({
           />
         </div>
 
-        <div className="space-y-1">
-          <Label htmlFor={`position-${index}`}>Position</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor={`position-${index}`} className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Position
+          </Label>
           <Input
             id={`position-${index}`}
             name={`position-${index}`}
@@ -78,8 +82,10 @@ export const InterviewProgressItem: React.FC<InterviewProgressItemProps> = ({
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-1">
-            <Label htmlFor={`roundsCleared-${index}`}>Rounds Cleared</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor={`roundsCleared-${index}`} className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+              Rounds Cleared
+            </Label>
             <Input
               id={`roundsCleared-${index}`}
               name={`roundsCleared-${index}`}
@@ -91,8 +97,10 @@ export const InterviewProgressItem: React.FC<InterviewProgressItemProps> = ({
             />
           </div>
 
-          <div className="space-y-1">
-            <Label htmlFor={`totalRounds-${index}`}>Total Rounds</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor={`totalRounds-${index}`} className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+              Total Rounds
+            </Label>
             <Input
               id={`totalRounds-${index}`}
               name={`totalRounds-${index}`}
@@ -104,8 +112,10 @@ export const InterviewProgressItem: React.FC<InterviewProgressItemProps> = ({
             />
           </div>
 
-          <div className="space-y-1">
-            <Label htmlFor={`dateCleared-${index}`}>Month Cleared</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor={`dateCleared-${index}`} className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+              Month Cleared
+            </Label>
             <Input
               id={`dateCleared-${index}`}
               name={`dateCleared-${index}`}
@@ -116,8 +126,10 @@ export const InterviewProgressItem: React.FC<InterviewProgressItemProps> = ({
             />
           </div>
 
-          <div className="space-y-1">
-            <Label htmlFor={`status-${index}`}>Status</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor={`status-${index}`} className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+              Status
+            </Label>
             <Select
               name={`status-${index}`}
               value={entry.status}

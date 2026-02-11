@@ -25,6 +25,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 
 export type VerificationContext = "profile" | "interview" | "recruiter";
 export type VerificationStatus =
@@ -188,9 +189,9 @@ export const VerifyCallout: React.FC<VerifyCalloutProps> = ({
   return (
     <Card
       className={cn(
-        "rounded-xl border-none shadow-md overflow-hidden",
+        "overflow-hidden rounded-xl border-none",
         status === "verified"
-          ? "bg-emerald-500/5 border border-emerald-500/20"
+          ? "border border-emerald-500/20 bg-emerald-500/5"
           : "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground",
       )}
     >
@@ -243,7 +244,7 @@ export const VerifyCallout: React.FC<VerifyCalloutProps> = ({
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 {status === "unverified" ? (
-                  <Button className="bg-surface text-heading hover:bg-surface/90 border-none font-semibold shadow-xl">
+                  <Button className="border-none bg-surface font-semibold text-heading hover:bg-surface/90">
                     Verify Now <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                 ) : (
@@ -319,7 +320,7 @@ function VerificationDialogContent({
           >
             Proof Documents
           </Label>
-          <div className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center bg-highlight hover:bg-muted transition-colors cursor-pointer relative">
+          <div className="relative flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-highlight p-6 transition-colors hover:bg-muted">
             <input
               id="files"
               type="file"
@@ -377,9 +378,8 @@ function VerificationDialogContent({
         <Button
           onClick={onSubmit}
           disabled={loading || !subject.trim() || files.length === 0}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
-          {loading ? "Submitting..." : "Submit Verification"}
+          {loading ? <LoadingIndicator label="Submitting..." /> : "Submit Verification"}
         </Button>
       </DialogFooter>
     </DialogContent>

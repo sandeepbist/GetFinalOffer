@@ -26,14 +26,82 @@ export const evidenceTypeEnum = pgEnum("evidence_type", [
   "interview_verified",
 ]);
 
+export const graphProposalStatusEnum = pgEnum("graph_proposal_status", [
+  "pending",
+  "approved",
+  "rejected",
+  "auto_approved",
+]);
+
 export const gfoSkillsLibraryTable = pgTable("gfo_skills_library", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => createId()),
   name: text("name").notNull().unique(),
+  normalizedName: text("normalized_name"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+export const gfoSkillAliasesTable = pgTable("gfo_skill_aliases", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  skillId: text("skill_id")
+    .notNull()
+    .references(() => gfoSkillsLibraryTable.id, { onDelete: "cascade" }),
+  alias: text("alias").notNull(),
+  normalizedAlias: text("normalized_alias").notNull().unique(),
+  source: text("source").notNull().default("manual"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const gfoGraphTaxonomyVersionsTable = pgTable("gfo_graph_taxonomy_versions", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  version: integer("version").notNull().unique(),
+  status: text("status").notNull().default("draft"),
+  source: text("source").default("manual"),
+  notes: text("notes"),
+  isActive: boolean("is_active").notNull().default(false),
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const gfoSkillRelationshipProposalsTable = pgTable(
+  "gfo_skill_relationship_proposals",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    fromSkillId: text("from_skill_id")
+      .notNull()
+      .references(() => gfoSkillsLibraryTable.id, { onDelete: "cascade" }),
+    toSkillId: text("to_skill_id")
+      .notNull()
+      .references(() => gfoSkillsLibraryTable.id, { onDelete: "cascade" }),
+    relationType: text("relation_type").notNull(),
+    confidence: real("confidence").notNull().default(0),
+    proposalScore: real("proposal_score").notNull().default(0),
+    source: text("source").notNull().default("ai"),
+    sourceVersion: text("source_version"),
+    reviewStatus: graphProposalStatusEnum("review_status")
+      .notNull()
+      .default("pending"),
+    reviewedBy: text("reviewed_by"),
+    reviewedAt: timestamp("reviewed_at"),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("graph_proposal_status_idx").on(table.reviewStatus, table.proposalScore),
+    index("graph_proposal_edge_idx").on(table.fromSkillId, table.toSkillId),
+  ]
+);
 
 export const gfoCompaniesTable = pgTable("gfo_companies", {
   id: text("id")
@@ -64,6 +132,21 @@ export const gfoCandidatesTable = pgTable("gfo_candidates", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const gfoGraphSyncStateTable = pgTable(
+  "gfo_graph_sync_state",
+  {
+    candidateUserId: text("candidate_user_id")
+      .primaryKey()
+      .references(() => gfoCandidatesTable.userId, { onDelete: "cascade" }),
+    lastSyncedAt: timestamp("last_synced_at"),
+    lastError: text("last_error"),
+    retryCount: integer("retry_count").notNull().default(0),
+    taxonomyVersion: integer("taxonomy_version").notNull().default(1),
+    activeCandidateCount: integer("active_candidate_count").notNull().default(0),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  }
+);
 
 export const gfoCandidateResumeChunksTable = pgTable(
   "gfo_candidate_resume_chunks",
@@ -296,6 +379,26 @@ export const gfoSearchInsightsRelations = relations(
     }),
     candidate: one(gfoCandidatesTable, {
       fields: [gfoSearchInsightsTable.candidateUserId],
+      references: [gfoCandidatesTable.userId],
+    }),
+  })
+);
+
+export const gfoSkillAliasesRelations = relations(
+  gfoSkillAliasesTable,
+  ({ one }) => ({
+    skill: one(gfoSkillsLibraryTable, {
+      fields: [gfoSkillAliasesTable.skillId],
+      references: [gfoSkillsLibraryTable.id],
+    }),
+  })
+);
+
+export const gfoGraphSyncStateRelations = relations(
+  gfoGraphSyncStateTable,
+  ({ one }) => ({
+    candidate: one(gfoCandidatesTable, {
+      fields: [gfoGraphSyncStateTable.candidateUserId],
       references: [gfoCandidatesTable.userId],
     }),
   })

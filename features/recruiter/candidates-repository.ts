@@ -1,6 +1,6 @@
 import type { ApiAdapterInterface, ApiRequestOptions } from "@/features/common/api/api-local-adapter";
 import { ApiResponse } from "@/features/common/api/api-types";
-import type { CandidateSummaryDTO } from "./candidates-dto";
+import type { CandidateSummaryDTO, GraphSearchTelemetryDTO } from "./candidates-dto";
 
 export interface RecruiterCandidateRepository {
   getCandidates(params: {
@@ -14,6 +14,7 @@ export interface RecruiterCandidateRepository {
     ApiResponse<{
       data: CandidateSummaryDTO[];
       total: number;
+      graphTelemetry?: GraphSearchTelemetryDTO;
     }>
   >;
 }
@@ -32,6 +33,7 @@ export const createRecruiterCandidateRepository = (
     return api.get<{
       data: CandidateSummaryDTO[];
       total: number;
+      graphTelemetry?: GraphSearchTelemetryDTO;
     }>("/recruiter/candidates", params, options);
   },
 });

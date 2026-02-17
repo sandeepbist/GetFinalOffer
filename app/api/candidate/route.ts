@@ -16,6 +16,7 @@ import { VerificationStatus } from "@/features/candidate/dashboard/components/Ve
 import { supabase } from "@/lib/supabase";
 import { resumeQueue } from "@/lib/queue";
 import { queueProfileSync } from "@/lib/sync-buffer";
+import { queueGraphSync } from "@/lib/graph/sync";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { ApiErrors, successResponse } from "@/features/common/api/response";
 import { validateFile } from "@/features/common/api/file-validation";
@@ -173,6 +174,7 @@ export async function POST(req: NextRequest) {
       );
     }
     queueProfileSync(userId).catch(console.error);
+    queueGraphSync({ userId, reason: "candidate_profile_update" }).catch(console.error);
 
     return successResponse(undefined, "Profile created. Resume processing in background.");
   } catch (err) {
@@ -219,6 +221,7 @@ export async function PATCH(req: NextRequest) {
         .update(gfoCandidatesTable)
         .set({ resumeUrl })
         .where(eq(gfoCandidatesTable.userId, userId));
+      queueGraphSync({ userId, reason: "candidate_profile_update" }).catch(console.error);
       return successResponse({ resumeUrl }, "Resume uploaded successfully");
     } catch {
       return ApiErrors.serverError("Failed to upload resume");
@@ -276,6 +279,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     queueProfileSync(userId).catch(console.error);
+    queueGraphSync({ userId, reason: "candidate_profile_update" }).catch(console.error);
 
     return successResponse(undefined, "Progress updated");
   }
@@ -330,6 +334,7 @@ export async function PUT(req: NextRequest) {
 
 
   queueProfileSync(userId).catch(console.error);
+  queueGraphSync({ userId, reason: "candidate_profile_update" }).catch(console.error);
 
   return successResponse(undefined, "Profile updated");
 }

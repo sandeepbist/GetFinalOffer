@@ -32,7 +32,8 @@ import {
   Sparkles,
   AlertTriangle,
   Info,
-  Bot
+  Bot,
+  Network
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
@@ -161,6 +162,52 @@ function ConfidenceBadge({ score }: { score: number }) {
   return null;
 }
 
+function GraphMatchBadge({ candidate }: { candidate: CandidateSummaryDTO }) {
+  if (!candidate.graphMatches || candidate.graphMatches.length === 0) return null;
+
+  const top = candidate.graphMatches[0];
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/25 bg-sky-500/10 px-2.5 py-0.5 text-xs font-semibold text-sky-700 transition-colors hover:bg-sky-500/15">
+          <Network className="h-3.5 w-3.5" />
+          Related Skill Match
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-96 p-0 shadow-xl border-border" align="start">
+        <div className="bg-highlight px-4 py-3 border-b border-border flex items-center gap-2">
+          <div className="p-1.5 bg-surface rounded-md border border-border">
+            <Network className="h-4 w-4 text-sky-700" />
+          </div>
+          <h4 className="text-sm font-bold text-heading">Graph match reasoning</h4>
+        </div>
+        <div className="p-4 space-y-3 bg-surface">
+          <div className="text-sm text-text">
+            <p className="font-medium">
+              Best path: <span className="text-heading">{top.path.join(" -> ")}</span>
+            </p>
+            <p className="text-xs text-text-muted mt-1">
+              Relation: {top.relationType} | Depth: {top.depth} | Score: {(top.contribution * 100).toFixed(1)}
+            </p>
+          </div>
+          {candidate.graphMatches.slice(0, 3).map((match, idx) => (
+            <div
+              key={`${match.matchedSkill}-${idx}`}
+              className="text-xs text-text-muted border-t border-border/70 pt-2"
+            >
+              <p className="font-medium text-text">
+                {match.seedSkill} {"->"} {match.matchedSkill}
+              </p>
+              <p>path: {match.path.join(" -> ")}</p>
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function MatchHighlight({ text, query }: { text?: string; query?: string }) {
   if (!text) return null;
 
@@ -231,7 +278,7 @@ export default function CandidateSearch() {
       const startTime = performance.now();
 
       try {
-        const { data, total } = await getVisibleCandidates(
+        const { data, total, graphTelemetry } = await getVisibleCandidates(
           page,
           pageSize,
           debouncedSearch || undefined,
@@ -253,6 +300,16 @@ export default function CandidateSearch() {
             query: debouncedSearch || "*",
             resultsCount: total,
             executionTimeMs: duration,
+            graphEnabled: graphTelemetry?.graphEnabled,
+            graphLatencyMs: graphTelemetry?.graphLatencyMs,
+            graphFallbackUsed: graphTelemetry?.graphFallbackUsed,
+            expandedSkillCount: graphTelemetry?.expandedSkillCount,
+            graphNewCandidatesFound: graphTelemetry?.graphNewCandidatesFound,
+            graphSeedCount: graphTelemetry?.graphSeedCount,
+            graphStrictMatchRows: graphTelemetry?.graphStrictMatchRows,
+            graphContainsFallbackUsed: graphTelemetry?.graphContainsFallbackUsed,
+            graphContainsMatchRows: graphTelemetry?.graphContainsMatchRows,
+            blendVariant: graphTelemetry?.blendVariant,
             filters: {
               minYears: yearsFilter ?? undefined,
               location: undefined,
@@ -503,6 +560,7 @@ export default function CandidateSearch() {
                           {c.name}
                         </h3>
                         <ConfidenceBadge score={c.matchScore || 0} />
+                        <GraphMatchBadge candidate={c} />
                         <AIReasoningBadge reasoning={c.aiReasoning} />
                       </div>
 
@@ -646,3 +704,4 @@ export default function CandidateSearch() {
     </motion.main>
   );
 }
+

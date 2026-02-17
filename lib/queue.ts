@@ -38,6 +38,17 @@ export const profileSyncQueue = new Queue(PROFILE_SYNC_QUEUE_NAME, {
   },
 });
 
+export const GRAPH_SYNC_QUEUE_NAME = "graph-sync";
+export const graphSyncQueue = new Queue(GRAPH_SYNC_QUEUE_NAME, {
+  connection,
+  defaultJobOptions: {
+    removeOnComplete: true,
+    removeOnFail: { count: 50 },
+    attempts: 3,
+    backoff: { type: "exponential", delay: 1000 },
+  },
+});
+
 export const createWorker = (name: string, processor: Processor, concurrency = 1) => {
   return new Worker(name, processor, {
     connection,

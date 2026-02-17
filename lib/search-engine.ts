@@ -1,5 +1,6 @@
 import { redis } from "@/lib/redis";
 import type { CandidateSearchFilters } from "@/features/recruiter/candidates-dto";
+import { toGraphSkillKey } from "@/lib/graph/normalize-skill";
 
 interface ShadowProfile {
     id: string;
@@ -12,28 +13,13 @@ const SEARCH_POOL_KEY = "search:pool:all";
 const MAX_SEARCH_POOL_SIZE = 200;
 
 export class SearchEngine {
-
-    static async searchLive(
-        query: string | undefined,
+    private static async hydrateAndFilterShadows(
+        candidateIds: string[],
         filters: CandidateSearchFilters,
         page: number,
         pageSize: number
     ): Promise<{ ids: string[]; total: number }> {
-
-        let candidateIds: string[] = [];
-
-        if (!query || query.trim() === "") {
-            candidateIds = await redis.zrevrange(SEARCH_POOL_KEY, 0, MAX_SEARCH_POOL_SIZE - 1);
-        } else {
-            const normalizedSkill = query.toLowerCase().trim().replace(/\s+/g, "-");
-            const skillKey = `idx:skill:${normalizedSkill}`;
-
-            candidateIds = await redis.smembers(skillKey);
-        }
-
-        if (candidateIds.length === 0) {
-            return { ids: [], total: 0 };
-        }
+        if (candidateIds.length === 0) return { ids: [], total: 0 };
 
         const pipeline = redis.pipeline();
         for (const id of candidateIds) {
@@ -74,5 +60,56 @@ export class SearchEngine {
             .map((c) => c.id);
 
         return { ids: pagedIds, total };
+    }
+
+    static async searchLive(
+        query: string | undefined,
+        filters: CandidateSearchFilters,
+        page: number,
+        pageSize: number
+    ): Promise<{ ids: string[]; total: number }> {
+
+        let candidateIds: string[] = [];
+
+        if (!query || query.trim() === "") {
+            candidateIds = await redis.zrevrange(SEARCH_POOL_KEY, 0, MAX_SEARCH_POOL_SIZE - 1);
+        } else {
+            const normalizedSkill = query.toLowerCase().trim().replace(/\s+/g, "-");
+            const skillKey = `idx:skill:${normalizedSkill}`;
+
+            candidateIds = await redis.smembers(skillKey);
+        }
+
+        return await this.hydrateAndFilterShadows(candidateIds, filters, page, pageSize);
+    }
+
+    static async searchByExpandedSkills(
+        expandedSkills: string[],
+        filters: CandidateSearchFilters,
+        page: number,
+        pageSize: number
+    ): Promise<{ ids: string[]; total: number }> {
+        if (expandedSkills.length === 0) return { ids: [], total: 0 };
+
+        const uniqueSkills = Array.from(new Set(expandedSkills.map((s) => toGraphSkillKey(s)).filter(Boolean)));
+        if (uniqueSkills.length === 0) return { ids: [], total: 0 };
+
+        const candidateWeightMap = new Map<string, number>();
+
+        for (const skillKey of uniqueSkills) {
+            const ids = await redis.smembers(`idx:skill:${skillKey}`);
+            for (const id of ids) {
+                candidateWeightMap.set(id, (candidateWeightMap.get(id) || 0) + 1);
+            }
+        }
+
+        if (candidateWeightMap.size === 0) return { ids: [], total: 0 };
+
+        const rankedIds = Array.from(candidateWeightMap.entries())
+            .sort((a, b) => b[1] - a[1])
+            .map(([id]) => id)
+            .slice(0, MAX_SEARCH_POOL_SIZE);
+
+        return await this.hydrateAndFilterShadows(rankedIds, filters, page, pageSize);
     }
 }

@@ -45,4 +45,4 @@ jobs:
         run: pnpm run test:unit
 
       - name: Validate curated taxonomy
-        run: pnpm graph:validate -- data/skill-graph/taxonomy.v1.json
+        run: pnpm exec tsx scripts/graph/validate-taxonomy.ts data/skill-graph/taxonomy.v1.json

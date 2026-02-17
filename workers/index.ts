@@ -13,6 +13,7 @@ import { graphSyncWorker } from "./graph-sync-worker";
 import { flushGraphMetricsProcessor } from "./graph-metrics-flush-worker";
 import { graphAlertProcessor } from "./graph-alert-worker";
 import { rankGraphProposalsProcessor } from "./graph-proposal-ranker";
+import { runAnalyticsWorker } from "./analytics-worker";
 const SYNC_INTERVAL_MS = 10 * 60 * 1000;
 const GRAPH_METRIC_FLUSH_INTERVAL_MS = 60 * 1000;
 const GRAPH_ALERT_INTERVAL_MS = 5 * 60 * 1000;
@@ -44,7 +45,7 @@ graphSyncWorker.on("completed", (job, result) => {
     }
 });
 
-runAnalyticsWorker().catch((err) => {
+runAnalyticsWorker().catch((err: unknown) => {
   console.error("🔥 Analytics Worker Critical Failure:", err);
 });
 

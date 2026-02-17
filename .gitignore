@@ -20,7 +20,9 @@
 /playwright-report
 /playwright-video
 /test-results
+/e2e
 playwright-screenshots
+playwright.config.ts
 test-results.json
 # next.js
 /.next/

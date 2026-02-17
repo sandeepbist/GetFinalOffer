@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
       minYears,
       recruiterOrgId: recruiter.organisationId,
       companyId,
-    });
+    }, { userId });
 
     return successResponse(result);
 

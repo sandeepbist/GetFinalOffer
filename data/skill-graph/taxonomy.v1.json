@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "domain": "software-data-ml",
+  "skills": [
+    { "id": "python", "name": "Python", "category": "language" },
+    { "id": "pytorch", "name": "PyTorch", "category": "framework" },
+    { "id": "tensorflow", "name": "TensorFlow", "category": "framework" },
+    { "id": "cuda", "name": "CUDA", "category": "platform" },
+    { "id": "linear-algebra", "name": "Linear Algebra", "category": "foundation" },
+    { "id": "statistics", "name": "Statistics", "category": "foundation" },
+    { "id": "mlops", "name": "MLOps", "category": "deployment" },
+    { "id": "docker", "name": "Docker", "category": "deployment" },
+    { "id": "react", "name": "React", "category": "framework" },
+    { "id": "typescript", "name": "TypeScript", "category": "language" },
+    { "id": "javascript", "name": "JavaScript", "category": "language" }
+  ],
+  "roles": [
+    { "id": "machine-learning-engineer", "title": "Machine Learning Engineer" },
+    { "id": "frontend-engineer", "title": "Frontend Engineer" }
+  ],
+  "aliases": [
+    { "alias": "ml engineer", "roleId": "machine-learning-engineer", "type": "role" },
+    { "alias": "deep learning", "skillId": "pytorch", "type": "skill" },
+    { "alias": "node.js", "skillId": "javascript", "type": "skill" }
+  ],
+  "roleRequirements": [
+    { "roleId": "machine-learning-engineer", "skillId": "python", "weight": 1.0 },
+    { "roleId": "machine-learning-engineer", "skillId": "pytorch", "weight": 0.95 },
+    { "roleId": "machine-learning-engineer", "skillId": "tensorflow", "weight": 0.9 },
+    { "roleId": "machine-learning-engineer", "skillId": "mlops", "weight": 0.75 },
+    { "roleId": "frontend-engineer", "skillId": "react", "weight": 1.0 },
+    { "roleId": "frontend-engineer", "skillId": "typescript", "weight": 0.9 }
+  ],
+  "skillRelations": [
+    { "fromSkillId": "pytorch", "toSkillId": "python", "relationType": "REQUIRES", "weight": 1.0, "directed": true },
+    { "fromSkillId": "tensorflow", "toSkillId": "python", "relationType": "REQUIRES", "weight": 1.0, "directed": true },
+    { "fromSkillId": "pytorch", "toSkillId": "cuda", "relationType": "RELATED_TO", "weight": 0.8, "directed": false },
+    { "fromSkillId": "pytorch", "toSkillId": "linear-algebra", "relationType": "RELATED_TO", "weight": 0.8, "directed": false },
+    { "fromSkillId": "pytorch", "toSkillId": "statistics", "relationType": "RELATED_TO", "weight": 0.7, "directed": false },
+    { "fromSkillId": "mlops", "toSkillId": "docker", "relationType": "REQUIRES", "weight": 0.8, "directed": true },
+    { "fromSkillId": "react", "toSkillId": "javascript", "relationType": "REQUIRES", "weight": 1.0, "directed": true },
+    { "fromSkillId": "react", "toSkillId": "typescript", "relationType": "RELATED_TO", "weight": 0.9, "directed": false }
+  ]
+}

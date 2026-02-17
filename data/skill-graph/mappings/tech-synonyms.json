@@ -1,0 +1,38 @@
+{
+  "requiredTerms": [
+    "react",
+    "nodejs",
+    "python",
+    "typescript",
+    "frontend engineer",
+    "backend engineer",
+    "ml engineer"
+  ],
+  "skillAliases": [
+    { "alias": "react.js", "canonical": "react" },
+    { "alias": "react developer", "canonical": "react" },
+    { "alias": "node.js", "canonical": "nodejs" },
+    { "alias": "node js", "canonical": "nodejs" },
+    { "alias": "node", "canonical": "nodejs" },
+    { "alias": "ts", "canonical": "typescript" },
+    { "alias": "js", "canonical": "javascript" },
+    { "alias": "ml", "canonical": "machine learning" },
+    { "alias": "mlops", "canonical": "mlops" },
+    { "alias": "deep learning", "canonical": "pytorch" },
+    { "alias": "frontend dev", "canonical": "react" },
+    { "alias": "backend dev", "canonical": "nodejs" },
+    { "alias": "golang", "canonical": "go" },
+    { "alias": "py", "canonical": "python" },
+    { "alias": "postgres", "canonical": "postgresql" },
+    { "alias": "k8s", "canonical": "kubernetes" },
+    { "alias": "ai engineer", "canonical": "machine learning" },
+    { "alias": "nlp", "canonical": "natural language processing" },
+    { "alias": "computer vision", "canonical": "computer vision" }
+  ],
+  "roleAliases": [
+    { "alias": "frontend dev", "canonicalRole": "frontend engineer" },
+    { "alias": "backend dev", "canonicalRole": "backend engineer" },
+    { "alias": "ml engineer", "canonicalRole": "machine learning engineer" },
+    { "alias": "fullstack engineer", "canonicalRole": "full stack engineer" }
+  ]
+}

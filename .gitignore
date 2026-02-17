@@ -1,6 +1,10 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-scripts/
 .vscode/
+# scripts
+/scripts/*
+!/scripts/graph/
+!/scripts/graph/**
+
 # dependencies
 /node_modules
 /.pnp
@@ -13,13 +17,11 @@ scripts/
 
 # testing
 /coverage
-/e2e
 /playwright-report
 /playwright-video
 /test-results
 playwright-screenshots
 test-results.json
-playwright.config.ts
 # next.js
 /.next/
 /out/
@@ -56,6 +58,19 @@ yarn-error.log*
 /pgdata
 /postgres-data
 /redis-data
+
+# graph data (raw/generated)
+/data/esco/
+/data/onet/
+/data/Skills.txt
+/data/Occupation Data.txt
+/data/skill-graph/reports/
+/data/skill-graph/taxonomy.v1.esco.json
+/data/skill-graph/taxonomy.v1.onet.json
+/data/skill-graph/taxonomy.v2.tech.json
+!/data/skill-graph/taxonomy.v1.json
+!/data/skill-graph/mappings/
+!/data/skill-graph/mappings/tech-synonyms.json
 # vercel
 .vercel
 

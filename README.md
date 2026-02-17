@@ -1,557 +1,254 @@
 # GetFinalOffer
 
-**Production-Grade AI Recruitment Intelligence Engine**
+Production-grade AI recruitment platform with hybrid search, asynchronous ingestion, and graph-based skill expansion.
 
-[![Live Demo](https://img.shields.io/badge/🌐_demo-live-success?style=for-the-badge)](https://getfinaloffer.vercel.app)
-[![GitHub](https://img.shields.io/badge/📦_source-github-181717?style=for-the-badge&logo=github)](https://github.com/sandeepbist/GetFinalOffer)
+[![Live Demo](https://img.shields.io/badge/demo-live-success?style=for-the-badge)](https://getfinaloffer.vercel.app)
+[![GitHub](https://img.shields.io/badge/source-github-181717?style=for-the-badge&logo=github)](https://github.com/sandeepbist/GetFinalOffer)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js_15-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
 
-> A distributed system that solves the lexical gap in technical recruitment using multi-agent RAG, three-phase escalation protocols, and event-driven architecture.
+## Project Overview
 
-**Performance:** 2ms L1 cache hits • 20ms live search • 99.9% uptime  
-**Scale:** 5,000+ resumes/hour • 1,000 concurrent updates/sec  
-**Cost:** 95% OpenAI API reduction through intelligent caching
+GetFinalOffer is a recruiting intelligence system focused on one core problem: recruiter intent and candidate profiles often describe the same skills with different language.
 
----
+The platform combines:
+- baseline hybrid search (keyword + vector + strategist expansion)
+- event-driven ingestion and indexing workers
+- graph-based skill expansion with Neo4j
+- Redis-backed cache and index layers for low-latency retrieval
 
-## Table of Contents
+## Problem and Approach
 
-- [The Problem](#-the-problem)
-- [The Solution](#-the-solution)
-- [System Architecture](#%EF%B8%8F-system-architecture)
-- [Core Features](#-core-features)
-- [Technical Deep Dive](#-technical-deep-dive)
-- [Performance & Reliability](#-performance--reliability)
-- [Tech Stack](#%EF%B8%8F-tech-stack)
-- [Architecture Diagrams](#-architecture-diagrams)
+Traditional ATS matching fails on semantic and transferable skills.
 
----
+Example:
+- Recruiter query: `Machine Learning Engineer`
+- Candidate profile: `Python`, `PyTorch`, `MLOps`, `Docker`, `Statistics`
 
-## 🎯 The Problem
+Keyword-only matching misses many relevant profiles. GetFinalOffer expands from role/skill seeds into related skills, then blends graph score with baseline ranking to improve recall without replacing the existing fallback path.
 
-Modern Applicant Tracking Systems (ATS) fail at the fundamental task of matching talent to opportunity. Here's why:
+## Architecture
 
-### The Lexical Gap
-```diff
-Recruiter searches: "Backend Scalability Expert"
-Candidate resume says: "Architected high-throughput distributed systems"
-
-- Traditional ATS: Zero matches ❌
-+ GetFinalOffer: Semantic match with 0.87 confidence ✅
-```
-
-**The issue:** They describe identical capabilities, but keyword matching returns nothing.
-
-### The Signal-Noise Problem
-```diff
-Candidate A: "Used React in a bootcamp project"
-Candidate B: "Architected React component library used by 10M+ users"
-
-- Traditional ATS: Both ranked equally (keyword "React" found) ❌
-+ GetFinalOffer: Candidate B ranked 4x higher via evidence-based scoring ✅
-```
-
-**The issue:** Keyword frequency doesn't measure depth of expertise.
-
-### The Write Bottleneck
-```diff
-PDF Upload → Parse → Extract → Embed → Index
-
-- Traditional ATS: All operations block HTTP request = Timeouts ❌
-+ GetFinalOffer: Async event-driven pipeline = Instant response ✅
-```
-
-**The issue:** Coupling compute-heavy tasks with user requests makes systems unscalable.
-
----
-
-## 💡 The Solution
-
-GetFinalOffer treats recruitment as a **distributed systems problem**, implementing patterns from:
-
-- **Elasticsearch** (multi-phase search escalation)
-- **Redis Labs** (tiered caching with pointer eviction)
-- **Git** (content-addressed storage via SHA-256)
-- **Twitter** (high-write throughput with server-side debouncing)
-- **Netflix** (circuit breakers and graceful degradation)
-
-### Core Innovations
-
-| Challenge | Traditional Approach | GetFinalOffer Solution | Impact |
-|-----------|---------------------|------------------------|--------|
-| **Lexical Gap** | Exact keyword match | Semantic vector search with hybrid retrieval | 3x candidate discovery rate |
-| **Search Latency** | Database query every time | Three-tier cache (L1/L2/L3) with write-back learning | 2ms → 20ms → adaptive |
-| **API Costs** | Re-embed every query | SHA-256 delta processing + pointer pattern | 95% cost reduction |
-| **Write Spikes** | Direct DB writes | Server-side debouncing + batch processing | 1,000 updates/sec sustained |
-| **System Failures** | Error screens | Circuit breakers + fail-open strategy | 99.9% uptime under API failures |
-
----
-
-## 🏗️ System Architecture
-
-### High-Level Data Flow
+### High-Level Architecture
 ![High Level Architecture](public/HLA.png)
 
----
+### Ingestion Pipeline
+![Ingestion Pipeline 1](public/ING1.png)
+![Ingestion Pipeline 2](public/ING2.png)
+![Ingestion Pipeline 3](public/ING3.png)
 
-## ⚡ Core Features
+### Search Flow
+![Search Flow](public/SFD.png)
 
-### 1. Three-Phase Search Escalation
-
-**The Problem:** Every search hits the database → High latency, high cost
-
-**The Solution:** CPU-inspired memory hierarchy
-```typescript
-// Phase 1: Check L1 cache (2ms)
-const cacheKey = hash(query + filters);
-const cached = await redis.get(`cache:query:${cacheKey}`);
-if (cached) return JSON.parse(cached);
-
-// Phase 2: Check Shadow Profiles (20ms)
-const candidateIds = await redis.sinter(
-  `idx:skill:${skill}`,
-  `idx:location:${location}`
-);
-const profiles = await redis.hmget(...candidateIds);
-const filtered = filterInMemory(profiles, criteria);
-if (filtered.length > 0) return filtered;
-
-// Phase 3: Deep Agentic Search (adaptive)
-const results = await executeAgenticRAG(query);
-
-// Write-back: Cache successful L3 results in L1
-await redis.setex(`cache:query:${cacheKey}`, 3600, JSON.stringify(results));
-return results;
-```
-
-**Impact:** 
-- Hot queries: 2ms (100x faster than DB)
-- Warm queries: 20ms (5x faster than DB)
-- Cold queries: Adaptive (guaranteed non-zero results)
-
-### 2. Cost-Optimized Ingestion Pipeline
-
-**The Problem:** Re-uploading resume with 1 typo costs $0.50 in embeddings
-
-**The Solution:** SHA-256 delta processing with pointer pattern
-```typescript
-// Worker A: Extractor (Intelligence Layer)
-const chunks = splitResume(pdfText);
-for (const chunk of chunks) {
-  const hash = sha256(chunk.text);
-  
-  // Check if we've seen this exact text before
-  const existing = await db.query(
-    'SELECT embedding FROM chunks WHERE content_hash = $1',
-    [hash]
-  );
-  
-  if (existing) {
-    // REUSE: $0.00 cost
-    chunk.embedding = existing.embedding;
-  } else {
-    // NEW: Embed and store
-    chunk.embedding = await openai.embed(minify(chunk.text));
-  }
-}
-
-// Cost savings:
-// - Token minification: 30% reduction per request
-// - Delta processing: 100% savings on re-uploads
-// - Canonical normalization: Prevents index fragmentation
-```
-
-**Impact:** 95% cost reduction ($200/month → $10/month at scale)
-
+### Additional System Visuals
 ![Cost](public/COST.png)
-
-### 3. High-Throughput Synchronization Engine
-
-**The Problem:** 1,000 profile updates/sec crashes PostgreSQL
-
-**The Solution:** Server-side debouncing with batch processing
-```typescript
-// API receives update
-await redis.sadd('sync:pool:candidates', candidateId);
-// O(1) operation, duplicates auto-rejected
-
-// Background worker (5-second heartbeat)
-setInterval(async () => {
-  const batch = await redis.spop('sync:pool:candidates', 100);
-  
-  // Single DB query for 100 candidates
-  const profiles = await db.query(
-    'SELECT * FROM candidates WHERE id = ANY($1)',
-    [batch]
-  );
-  
-  // Single Redis pipeline write for shadow profiles
-  const pipeline = redis.pipeline();
-  profiles.forEach(p => {
-    pipeline.hset(`profile:${p.id}`, {
-      exp: p.years_experience,
-      loc: p.location,
-      skills: p.skill_ids
-    });
-  });
-  await pipeline.exec();
-}, 5000);
-```
-
-**Impact:** 1,000+ updates/sec sustained, 98% write-lock reduction
-
-### 4. Multi-Agent RAG with Adversarial Evaluation
-
-**The Problem:** How do you PROVE your search works?
-
-**The Solution:** Automated LLM-as-a-Judge testing
-```typescript
-// Generate adversarial test cases
-const testCases = await openai.chat.completions.create({
-  model: 'gpt-4',
-  messages: [{
-    role: 'system',
-    content: `Generate 10 tricky recruiter queries for this candidate:
-    - Implicit queries (describe concept without naming tech)
-    - Vague queries (recruiter slang)
-    - Synonym queries (alternative terms for same skill)`
-  }, {
-    role: 'user',
-    content: candidateResume
-  }]
-});
-
-// Run search for each test case
-for (const query of testCases) {
-  const results = await search(query);
-  
-  // Verify candidate appears in results
-  const found = results.some(r => r.id === candidateId);
-  
-  recall += found ? 1 : 0;
-}
-
-// Result: 100% recall on semantic queries
-// (vs 23% recall with keyword search)
-```
-
-**Impact:** Mathematical proof of search quality, not guesswork
-
 ![Multi Agent](public/AGENT.png)
-
-### 5. Production-Grade Resilience
-
-**The Problem:** OpenAI API failures cascade to entire system
-
-**The Solution:** Circuit breakers with fail-open strategy
-```typescript
-// Circuit breaker configuration
-const breaker = createCircuitBreaker(openaiCall, {
-  timeout: 10000,        // 10s max wait
-  errorThreshold: 50,    // Open after 50% errors
-  resetTimeout: 30000    // Try again after 30s
-});
-
-// Usage with fallback
-try {
-  const result = await breaker.fire(query);
-  return result;
-} catch (err) {
-  if (err.code === 'EOPENBREAKER') {
-    console.warn('Circuit open, falling back to keyword search');
-    // System degrades gracefully
-    return keywordSearch(query);
-  }
-  throw err;
-}
-```
-
-**Impact:** 99.9% uptime even when OpenAI is down
-
 ![Resilience](public/RESIL.png)
 
----
+## Search Pipeline (Baseline + Graph)
 
-## 🔬 Technical Deep Dive
+### Baseline Search
+1. Query arrives at recruiter search API.
+2. Strategist expands intent terms.
+3. Live candidate index and vector path retrieve baseline pool.
+4. Baseline ranking is returned when graph is off/unavailable.
 
-### Ingestion Pipeline Architecture
-![Igestion Pipeline](public/ING1.png)
+### Graph Expansion Path
+1. Graph execution is controlled by feature flags (`off|shadow|on`).
+2. Query and strategist hints generate deterministic graph seeds.
+3. Neo4j returns expanded skills via role/skill/alias traversal.
+4. Candidate graph score is computed and blended into ranking when mode is `on`.
+5. Circuit breaker and fallback guarantee baseline path remains available.
 
-![Igestion Pipeline](public/ING2.png)
+### Current Measured Snapshot (Local, Aura Free, Shadow Tuning)
+- Cached graph expansion: roughly `p50 ~40ms`, `p95 ~50ms`
+- Uncached graph expansion (no-cache benchmark): roughly `p50 ~430ms`, `p95 ~855ms`
+- Fallback rate after tuning in uncached benchmark: `0%` on the tested set
 
-![Igestion Pipeline](public/ING3.png)
+These numbers are environment-specific and should be re-measured in staging/prod.
 
+## Skill Graph Module
 
-**Why concurrency: 1 for workers?**
-- Protects PostgreSQL from write-lock storms
-- Ensures atomic consistency
-- Prevents HNSW index corruption
-- Scales horizontally by adding more worker containers
+### Core Components
+- `lib/graph/driver.ts`: Neo4j driver lifecycle
+- `lib/graph/circuit-breaker.ts`: opossum-wrapped graph query protection
+- `lib/graph/expansion-service.ts`: seed lookup + traversal + cache
+- `lib/graph/scoring.ts`: depth/weight/idf/top-k scoring
+- `scripts/graph/*.ts`: taxonomy import/build/validate/sync/benchmark tooling
+- `workers/graph-*.ts`: sync, metrics flush, alert evaluation, proposal ranking
 
-### Search Flow Architecture
-```
-User Query: "Senior React developer with 5 years"
-```
-![Three Phase Search Flow ](public/SFD.png)
+### Taxonomy Strategy
+- Curated base: `data/skill-graph/taxonomy.v1.json`
+- Synonym bridges: `data/skill-graph/mappings/tech-synonyms.json`
+- Generated artifacts (ESCO/O*NET derived) are intentionally excluded from Git
 
+## Local Setup
 
----
+### Prerequisites
+- Node.js 20+
+- pnpm
+- PostgreSQL (Supabase recommended)
+- Redis (Upstash recommended)
+- Neo4j (AuraDB recommended)
 
-## 📊 Performance & Reliability
-
-### Load Testing Results
-
-Tested with **k6** simulating realistic recruitment platform usage:
-```javascript
-// Load test configuration
-export const options = {
-  scenarios: {
-    search_spike: {
-      executor: 'ramping-vus',
-      startVUs: 0,
-      stages: [
-        { duration: '2m', target: 100 },  // Ramp up
-        { duration: '5m', target: 100 },  // Sustained load
-        { duration: '2m', target: 500 },  // Traffic spike
-        { duration: '5m', target: 500 },  // Peak load
-        { duration: '2m', target: 0 },    // Ramp down
-      ],
-    },
-    profile_updates: {
-      executor: 'constant-arrival-rate',
-      rate: 1000,  // 1000 updates/sec
-      duration: '10m',
-      preAllocatedVUs: 50,
-    },
-  },
-};
+### Install
+```bash
+pnpm install
 ```
 
-**Results:**
-
-| Metric | L1 Cache Hit | L2 Shadow Profile | L3 Agentic RAG |
-|--------|-------------|-------------------|----------------|
-| **p50 Latency** | 1.8ms | 18ms | 340ms |
-| **p95 Latency** | 2.4ms | 24ms | 580ms |
-| **p99 Latency** | 3.1ms | 31ms | 820ms |
-| **Throughput** | 10,000 req/s | 2,500 req/s | 150 req/s |
-| **Error Rate** | 0.01% | 0.03% | 0.08% |
-
-**Cache Hit Rates:**
-- L1 (Exact): 38% of queries
-- L2 (Shadow): 47% of queries  
-- L3 (RAG): 15% of queries (write-back to L1 after success)
-
-### Cost Analysis
-
-**Traditional Approach (no caching):**
-```
-100,000 searches/month × $0.002/search = $200/month
+### Run App + Workers
+```bash
+pnpm run dev
+pnpm exec tsx -r dotenv/config workers/index.ts
 ```
 
-**GetFinalOffer (with three-tier caching):**
+## Environment Variables
+
+### App and Data
+- `DATABASE_URL`
+- `DB_MAX_CONNECTIONS` (optional)
+- `REDIS_URL`
+- `OPENAI_API_KEY`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY` or `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_APP_URL`
+
+### Upstash (if using REST clients)
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+- `UPSTASH_VECTOR_REST_URL`
+- `UPSTASH_VECTOR_REST_TOKEN`
+
+### Graph (Neo4j + Runtime)
+- `NEO4J_URI`
+- `NEO4J_USERNAME`
+- `NEO4J_PASSWORD`
+- `NEO4J_DATABASE` (optional)
+- `GRAPH_SEARCH_MODE` (`off|shadow|on`)
+- `GRAPH_SEARCH_TRAFFIC_PERCENT`
+- `GRAPH_BLEND_WEIGHT`
+- `GRAPH_BLEND_VARIANT` (optional label)
+- `GRAPH_MAX_DEPTH`
+- `GRAPH_POLICY_VERSION`
+- `GRAPH_TOP_K`
+- `GRAPH_EXPANSION_CACHE_TTL_SECONDS`
+- `GRAPH_STRICT_SEED_LIMIT`
+- `GRAPH_CONTAINS_SEED_LIMIT`
+- `GRAPH_STRICT_PATH_LIMIT_PER_SEED`
+- `GRAPH_CONTAINS_PATH_LIMIT_PER_SEED`
+- `GRAPH_GLOBAL_RESULT_LIMIT`
+- `GRAPH_CONTAINS_FALLBACK_DEPTH`
+- `GRAPH_BREAKER_TIMEOUT_MS`
+- `GRAPH_BREAKER_VOLUME_THRESHOLD`
+
+### Alerting
+- `PAGERDUTY_ROUTING_KEY`
+- `SLACK_WEBHOOK_URL`
+- `ALERT_EMAIL_WEBHOOK_URL`
+- `ALERT_EMAIL_RECIPIENTS`
+
+## Graph Data Build and Sync Commands
+
+Run in this order when building a new taxonomy snapshot.
+
+1. Import ESCO source into intermediate taxonomy JSON:
+```bash
+pnpm graph:import-esco -- --skills "data/esco/skills_en.csv" --relations "data/esco/broaderRelationsSkillPillar_en.csv" --output "data/skill-graph/taxonomy.v1.esco.json" --report "data/skill-graph/reports/esco-import-report.json" --version 1
 ```
-L1 hits: 38,000 × $0.00 = $0
-L2 hits: 47,000 × $0.00 = $0
-L3 hits: 15,000 × $0.002 = $30
-----------------
-Total: $30/month (85% savings)
 
-With delta processing:
-- Re-uploads: 50% of total uploads
-- Savings: 50% × $0.50 × 1,000 uploads = $250/month
-
-Combined savings: $420/month (95% reduction)
+2. Import O*NET source into intermediate taxonomy JSON:
+```bash
+pnpm graph:import-onet -- --input "data/onet/raw/Skills.txt" --output "data/skill-graph/taxonomy.v1.onet.json" --report "data/skill-graph/reports/onet-import-report.json" --version 1
 ```
 
-### Reliability Metrics
+3. Build unified graph taxonomy:
+```bash
+pnpm graph:build-tech -- --scope all --curated "data/skill-graph/taxonomy.v1.json" --esco "data/skill-graph/taxonomy.v1.esco.json" --onet "data/skill-graph/taxonomy.v1.onet.json" --synonyms "data/skill-graph/mappings/tech-synonyms.json" --output "data/skill-graph/taxonomy.v2.tech.json" --report "data/skill-graph/reports/build-tech-taxonomy-report.json" --version 2
+```
 
-**Uptime SLA:** 99.9% (measured over 30 days)
+4. Validate:
+```bash
+pnpm graph:validate -- data/skill-graph/taxonomy.v2.tech.json
+```
 
-**Failure Modes & Recovery:**
+5. Sync taxonomy to Postgres + Neo4j:
+```bash
+pnpm graph:sync-taxonomy -- --input data/skill-graph/taxonomy.v2.tech.json
+```
 
-| Failure Scenario | System Behavior | Recovery Time |
-|-----------------|-----------------|---------------|
-| OpenAI API down | Circuit breaker opens → Falls back to keyword search | Immediate |
-| PostgreSQL connection lost | Queue writes in Redis → Replay on recovery | < 30s |
-| Redis cluster failover | Upstash auto-failover → Transparent to app | < 5s |
-| Worker crash | BullMQ job retry (3 attempts) → DLQ if all fail | 30s - 2m |
-| Embedding API rate limit | Exponential backoff + queue buffering | 1 - 5m |
+6. Recompute IDF:
+```bash
+pnpm graph:backfill-idf
+```
 
+7. Warm common queries:
+```bash
+pnpm graph:warmup
+```
 
-### RAG Evaluation Results
+8. Benchmark:
+```bash
+pnpm graph:benchmark -- --warmup 1 --repeat 3
+pnpm graph:benchmark -- --no-cache --warmup 1 --repeat 3
+```
 
-![RAG Evaluation](public/rag5.jpg)
+## Benchmarking and Observability
 
-![RAG Evaluation](public/rag4.jpg)
+### Graph Benchmark Script
+- `scripts/graph/benchmark.ts`
+- Outputs per-query latency, fallback, cache-hit, expansion count, and p50/p95 summaries.
 
-![RAG Evaluation](public/rag3.jpg)
+### Graph Diagnose Script
+- `scripts/graph/diagnose.ts`
+- Confirms node/edge counts, exact/contains seed matches, alias coverage.
 
-![RAG Evaluation](public/rag2.jpg)
-
-*Automated testing proving 100% recall on semantic queries*
-
-### Load Test Performance
-
+### Evaluation Images
+![RAG Evaluation 1](public/rag5.jpg)
+![RAG Evaluation 2](public/rag4.jpg)
+![RAG Evaluation 3](public/rag3.jpg)
+![RAG Evaluation 4](public/rag2.jpg)
 ![Load Test](public/load-test.jpg)
-*k6 benchmark results showing <100ms p95 latency under realistic load*
 
----
+## Deployment Topology
 
-## 🛠️ Tech Stack
+- Frontend/API: Vercel (Next.js)
+- Workers: Railway (Docker)
+- Primary DB: Supabase Postgres
+- Cache and index sets: Upstash Redis
+- Graph DB: Neo4j AuraDB
 
-### Core Framework
-- **Next.js 15** - App Router, Server Components, Edge Runtime
-- **TypeScript** - Strict mode, path aliases
-- **Turbopack** - 10x faster than Webpack
+Recommended release flow:
+1. Deploy app and workers with `GRAPH_SEARCH_MODE=shadow`.
+2. Run taxonomy sync + warmup.
+3. Observe graph metrics and fallback behavior.
+4. Ramp traffic using feature flags.
 
-### Data Layer
-- **PostgreSQL** (Supabase) - Primary database
-- **pgvector** - Vector similarity search (HNSW index)
-- **Drizzle ORM** - Type-safe SQL queries
-- **Redis** (Upstash) - Multi-purpose caching layer
+Pre-push and release checks: see `docs/release-prepush-checklist.md`.
 
-### AI & ML
-- **OpenAI API** - text-embedding-3-small (512d vectors)
-- **GPT-4o-mini** - Agent reasoning & evaluation
-- **LangChain.js** - Document chunking, prompt templates
+## Roadmap
 
-### Async & Queue
-- **BullMQ** - Job queue with retry logic
-- **Redis Streams** - Event broadcasting
-- **Dead Letter Queues** - Failed job recovery
+### Near-Term
+- Complete graph rollout gates for shadow to live traffic ramp.
+- Add richer alias coverage and taxonomy QA automation.
+- Add dashboarding for graph quality and fallback trends.
 
-### Resilience
-- **Opossum** - Circuit breakers for external APIs
-- **p-retry** - Exponential backoff
-- **Zod** - Runtime type validation
+### Mid-Term
+- Improve uncached graph latency through infra and regional alignment.
+- Expand role coverage and multilingual skill normalization.
+- Add recruiter-facing explainability for graph matches.
 
-### Monitoring
-- **k6** - Load testing & performance benchmarking
-- **Custom analytics** - Search latency, cache hit rates
+## License
 
-### Infrastructure
-- **Vercel** - Edge deployment, serverless functions
-- **Docker** - Worker containerization
-- **GitHub Actions** - CI/CD pipeline
+MIT License. See [LICENSE](LICENSE).
 
----
-## 🎓 Key Learnings & Design Decisions
-
-### Why Three-Phase Escalation?
-
-**Alternative considered:** Always query PostgreSQL with caching
-
-**Why rejected:**
-- Even with caching, vector similarity on 1M+ rows takes 50-200ms
-- Costs scale linearly with database size
-
-**Chosen approach:** Multi-tier cache inspired by CPU memory hierarchy
-
-- **L1:** Instant (hot keys)
-- **L2:** Fast (warm data in memory)
-- **L3:** Intelligent (cold path with learning)
-- **Note:** Shadow profiles enable O(1) filtering in memory
-
-### Why SHA-256 Delta Processing?
-
-**Alternative considered:** Always re-embed on upload
-
-**Why rejected:**
-- Recruiters frequently update resumes (fix typos, add recent experience)
-- Re-embedding identical text wastes money and time
-- No deduplication leads to index bloat
-
-**Chosen approach:** Content-addressed storage like Git
-- Hash every text chunk
-- Reuse embeddings for identical content
-- Only embed net-new text
-
-### Why Server-Side Debouncing?
-
-**Alternative considered:** Write to database on every update
-
-**Why rejected:**
-- Profile updates happen in bursts (recruiter edits form)
-- Direct writes cause write-lock contention
-- PostgreSQL can't handle 1,000+ concurrent writes
-
-**Chosen approach:** Buffer in Redis + batch processing
-- Deduplication via Sets (O(1))
-- Single bulk query per batch
-- Horizontal scaling via multiple workers
-
-### Why Multi-Agent Architecture?
-
-**Alternative considered:** Single LLM call for search
-
-**Why rejected:**
-- Conflates query understanding with result evaluation
-- No fallback if LLM fails
-- Expensive for simple queries
-
-**Chosen approach:** Agent orchestration with circuit breakers
-- **Strategist:** Query expansion (cheap)
-- **Executor:** Hybrid search (cached)
-- **Evaluator:** Match scoring (conditional)
-- **Resilience:** Each agent can fail independently
-
----
-
-## 📈 Future Roadmap
-
-### Phase 1: Enhanced Intelligence
-- Multi-modal search (images, videos in portfolio)
-- Skill graph embeddings (hierarchical relationships)
-- Reinforcement learning from recruiter feedback
-
-### Phase 2: Scale Optimization
-- Distributed vector index (Qdrant/Weaviate)
-- Read replicas for PostgreSQL
-- CDN caching for static candidate data
-
-### Phase 3: Product Features
-- Interview scheduling automation
-- Automated email outreach generator
-- Salary range prediction
-- Culture fit analysis
-
----
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) for details
-
----
-
-## 👤 Author
+## Author
 
 **Sandeep Bist**
+- Portfolio: [sandeepbist.vercel.app](https://sandeepbist.vercel.app)
+- LinkedIn: [linkedin.com/in/sandeepbist22](https://linkedin.com/in/sandeepbist22)
+- GitHub: [@sandeepbist](https://github.com/sandeepbist)
+- Email: sbist738@gmail.com
 
-- **Portfolio:** [sandeepbist.vercel.app](https://sandeepbist.vercel.app)
-- **LinkedIn:** [linkedin.com/in/sandeepbist22](https://linkedin.com/in/sandeepbist22)
-- **GitHub:** [@sandeepbist](https://github.com/sandeepbist)
-- **Email:** sbist738@gmail.com
+## Acknowledgments
 
----
-
-## 🙏 Acknowledgments
-
-**Inspired by production systems at:**
-- **Elasticsearch:** Multi-phase search strategies
-- **Redis Labs:** Tiered caching architectures
-- **Netflix:** Circuit breaker patterns
-- **Anthropic/OpenAI:** LLM evaluation methodologies
-
-**Built with insights from:**
-- *Designing Data-Intensive Applications* by Martin Kleppmann
-- *System Design Interview* by Alex Xu
-- Redis University courses on caching patterns
-
-<div align="center">
-  <br />
-  ⭐ Star this repo if you found the architecture interesting!
-  <br />
-  Built with precision. Scaled with intelligence. Optimized for cost.
-</div>
+System-design inspiration from production patterns used in search, caching, and resilience engineering communities.

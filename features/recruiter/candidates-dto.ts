@@ -15,6 +15,17 @@ export interface CandidateSummaryDTO {
   verificationStatus?: string;
   resumeUrl?: string;
   profilePreview?: CandidateProfilePreviewDTO;
+  graphScore?: number;
+  graphMatches?: Array<{
+    seedSkill: string;
+    matchedSkill: string;
+    relationType: string;
+    depth: number;
+    path: string[];
+    idfScore: number;
+    contribution: number;
+  }>;
+  blendVariant?: string;
 }
 
 export interface CandidateInterviewPreviewDTO {
@@ -56,7 +67,21 @@ export interface CandidateMatchResult {
   match_content: string;
 }
 
+export interface GraphSearchTelemetryDTO {
+  graphEnabled: boolean;
+  graphLatencyMs: number;
+  graphFallbackUsed: boolean;
+  expandedSkillCount: number;
+  graphNewCandidatesFound: number;
+  blendVariant?: string;
+  graphSeedCount?: number;
+  graphStrictMatchRows?: number;
+  graphContainsFallbackUsed?: boolean;
+  graphContainsMatchRows?: number;
+}
+
 export interface SearchResult {
   data: CandidateSummaryDTO[];
   total: number;
+  graphTelemetry?: GraphSearchTelemetryDTO;
 }

@@ -13,8 +13,16 @@ import { generateEmbedding } from "@/lib/ai";
 import { supabase } from "@/lib/supabase";
 import { SemanticCache } from "@/lib/semantic-cache";
 import { SearchEngine } from "@/lib/search-engine";
-import { StrategistAgent } from "@/lib/agents/strategist";
+import { StrategistAgent, SearchStrategy } from "@/lib/agents/strategist";
 import { EvaluatorAgent } from "@/lib/agents/evaluator";
+import { getGraphBlendWeight, getGraphTopK } from "@/lib/graph/config";
+import { recordGraphSearchMetrics } from "@/lib/graph/metrics";
+import type { GraphExpansionResult, GraphMetricEnvelope } from "@/lib/graph/types";
+import {
+    applyGraphScoresToCandidates,
+    decideGraphExecution,
+    expandGraphQuery,
+} from "@/features/graph/graph-data-access";
 import type {
     CandidateSummaryDTO,
     CandidateSearchFilters,
@@ -28,16 +36,65 @@ const THRESHOLD_LOOSE = 0.10;
 const RECALL_POOL_SIZE = 50;
 const LIVE_POOL_SIZE = 200;
 
+interface SearchExecutionContext {
+    userId?: string;
+}
+
 function paginateResults<T>(items: T[], page: number, pageSize: number): T[] {
     const start = (page - 1) * pageSize;
     return items.slice(start, start + pageSize);
+}
+
+function dedupeIds(ids: string[]): string[] {
+    return Array.from(new Set(ids));
+}
+
+function buildRankScoreMap(ids: string[]): Record<string, number> {
+    const scores: Record<string, number> = {};
+    const total = Math.max(1, ids.length);
+
+    ids.forEach((id, idx) => {
+        scores[id] = (total - idx) / total;
+    });
+
+    return scores;
+}
+
+function buildBlendVariant(weight: number): string {
+    const keep = Math.round((1 - weight) * 100);
+    const graph = Math.round(weight * 100);
+    return process.env.GRAPH_BLEND_VARIANT || `${keep}/${graph}`;
+}
+
+
+function graphMetricDefaults(): GraphMetricEnvelope {
+    return {
+        graphEnabled: false,
+        graphLatencyMs: 0,
+        graphFallbackUsed: false,
+        expandedSkillCount: 0,
+        graphNewCandidatesFound: 0,
+        graphSeedCount: 0,
+        graphStrictMatchRows: 0,
+        graphContainsFallbackUsed: false,
+        graphContainsMatchRows: 0,
+    };
+}
+
+async function safeRecordGraphMetrics(metrics: GraphMetricEnvelope): Promise<void> {
+    try {
+        await recordGraphSearchMetrics(metrics);
+    } catch (error) {
+        console.warn("Failed to record graph metrics", error);
+    }
 }
 
 export async function searchCandidatesHybrid(
     query: string,
     page: number,
     pageSize: number,
-    filters: CandidateSearchFilters
+    filters: CandidateSearchFilters,
+    context: SearchExecutionContext = {}
 ): Promise<SearchResult> {
 
     if (page === 1) {
@@ -45,36 +102,107 @@ export async function searchCandidatesHybrid(
             const cached = await SemanticCache.findExact(query, filters);
             if (cached) {
                 console.log("L1 Cache Hit");
-                return { data: cached.candidates, total: cached.total };
+                await safeRecordGraphMetrics(graphMetricDefaults());
+                return {
+                    data: cached.candidates,
+                    total: cached.total,
+                    graphTelemetry: graphMetricDefaults(),
+                };
             }
         } catch (err) {
             console.error("Cache Read Error", err);
         }
     }
 
+    const graphDecision = decideGraphExecution(query, context.userId);
+    const graphMode = graphDecision.mode;
+    const graphAllowed = graphDecision.enabled;
+
+    let strategy: SearchStrategy | null = null;
+    let graphExpansion: GraphExpansionResult | null = null;
+    let graphMetrics: GraphMetricEnvelope = graphMetricDefaults();
+
+    if (query.trim() && graphAllowed) {
+        try {
+            strategy = await StrategistAgent.analyzeQuery(query);
+            graphExpansion = await expandGraphQuery(query, strategy.expandedKeywords);
+
+            graphMetrics = {
+                graphEnabled: true,
+                graphLatencyMs: graphExpansion.latencyMs,
+                graphFallbackUsed: graphExpansion.fallbackUsed,
+                expandedSkillCount: graphExpansion.expandedSkills.length,
+                graphNewCandidatesFound: 0,
+                graphSeedCount: graphExpansion.seedDebug?.totalSeeds || 0,
+                graphStrictMatchRows: graphExpansion.seedDebug?.strictMatchRows || 0,
+                graphContainsFallbackUsed: graphExpansion.seedDebug?.containsFallbackUsed || false,
+                graphContainsMatchRows: graphExpansion.seedDebug?.containsMatchRows || 0,
+            };
+        } catch (error) {
+            console.warn("Graph expansion failed", error);
+            graphMetrics.graphEnabled = true;
+            graphMetrics.graphFallbackUsed = true;
+        }
+    }
+
     try {
         const liveResult = await SearchEngine.searchLive(query, filters, 1, LIVE_POOL_SIZE);
 
-        if (liveResult.total > 0) {
-            console.log(`Live Search Hit: Found ${liveResult.total} candidates`);
-            const hydratedLive = await hydrateCandidates(liveResult.ids, filters);
+        let graphLiveIds: string[] = [];
+        if (graphExpansion && graphExpansion.expandedSkills.length > 0) {
+            const graphPool = await SearchEngine.searchByExpandedSkills(
+                graphExpansion.expandedSkills.map((s) => s.normalizedSkill),
+                filters,
+                1,
+                LIVE_POOL_SIZE
+            );
+            graphLiveIds = graphPool.ids;
+            graphMetrics.graphNewCandidatesFound = graphLiveIds.filter((id) => !liveResult.ids.includes(id)).length;
+        }
+
+        const combinedLiveIds = graphMode === "on"
+            ? dedupeIds([...liveResult.ids, ...graphLiveIds])
+            : liveResult.ids;
+
+        if (combinedLiveIds.length > 0) {
+            console.log(`Live Search Hit: Found ${combinedLiveIds.length} candidates`);
+
+            const baseScores = buildRankScoreMap(combinedLiveIds);
+            const hydratedLive = await hydrateCandidates(combinedLiveIds, filters, baseScores);
 
             if (hydratedLive.total > 0) {
+                hydratedLive.data = applyGraphScoresToCandidates(
+                    hydratedLive.data,
+                    graphExpansion,
+                    baseScores,
+                    graphMode,
+                    getGraphTopK(strategy?.seniorityLevel || "Any"),
+                    getGraphBlendWeight(),
+                    buildBlendVariant(getGraphBlendWeight())
+                );
+
                 const pageResult = {
                     data: paginateResults(hydratedLive.data, page, pageSize),
-                    total: hydratedLive.total
+                    total: hydratedLive.total,
+                    graphTelemetry: graphMetrics,
                 };
 
                 if (page === 1) {
                     SemanticCache.set(query, filters, pageResult).catch(console.error);
                 }
 
+                await safeRecordGraphMetrics(graphMetrics);
                 return pageResult;
             }
         }
 
         if (!query) {
-            return getBrowseResults(page, pageSize, filters);
+            await safeRecordGraphMetrics(graphMetricDefaults());
+            const browse = await getBrowseResults(page, pageSize, filters);
+            return {
+                ...browse,
+                graphTelemetry: graphMetricDefaults(),
+            };
         }
 
     } catch (e) {
@@ -86,21 +214,28 @@ export async function searchCandidatesHybrid(
     let queryVector: number[] | undefined;
 
     try {
-        const strategy = await StrategistAgent.analyzeQuery(query);
-        console.log("Search Strategy:", strategy);
+        const resolvedStrategy = strategy || await StrategistAgent.analyzeQuery(query);
+        strategy = resolvedStrategy;
 
-        queryVector = await generateEmbedding(strategy.semanticFocus);
+        console.log("Search Strategy:", resolvedStrategy);
+
+        queryVector = await generateEmbedding(resolvedStrategy.semanticFocus);
 
         const semanticCached = await SemanticCache.findSemantic(queryVector);
         if (semanticCached) {
             console.log("L2 Semantic Cache Hit");
-            return { data: semanticCached.candidates, total: semanticCached.total };
+            await safeRecordGraphMetrics(graphMetrics);
+            return {
+                data: semanticCached.candidates,
+                total: semanticCached.total,
+                graphTelemetry: graphMetrics,
+            };
         }
 
         const runSearch = async (threshold: number, forceVectorOnly = false) => {
             const finalText = forceVectorOnly
                 ? ""
-                : strategy.expandedKeywords.map((k) => `"${k}"`).join(" OR ");
+                : resolvedStrategy.expandedKeywords.map((k) => `"${k}"`).join(" OR ");
 
             return await supabase.rpc("match_candidates_hybrid", {
                 query_embedding: queryVector,
@@ -125,31 +260,66 @@ export async function searchCandidatesHybrid(
             matchHighlights[m.candidate_id] = m.match_content;
         });
 
+        let graphCandidateIds: string[] = [];
+        if (graphExpansion && graphExpansion.expandedSkills.length > 0) {
+            const graphResult = await SearchEngine.searchByExpandedSkills(
+                graphExpansion.expandedSkills.map((s) => s.normalizedSkill),
+                filters,
+                1,
+                LIVE_POOL_SIZE
+            );
+            graphCandidateIds = graphResult.ids;
+            graphMetrics.graphNewCandidatesFound = graphCandidateIds.filter((id) => !(id in matchScores)).length;
+        }
+
+        const finalCandidateIds = graphMode === "on"
+            ? dedupeIds([...rawMatches.map((m) => m.candidate_id), ...graphCandidateIds])
+            : rawMatches.map((m) => m.candidate_id);
+
         const hydratedMatches = await hydrateCandidates(
-            rawMatches.map((m) => m.candidate_id),
+            finalCandidateIds,
             filters,
             matchScores,
             matchHighlights
         );
 
+        hydratedMatches.data = applyGraphScoresToCandidates(
+            hydratedMatches.data,
+            graphExpansion,
+            matchScores,
+            graphMode,
+            getGraphTopK(resolvedStrategy.seniorityLevel),
+            getGraphBlendWeight(),
+            buildBlendVariant(getGraphBlendWeight())
+        );
+
         let pageCandidates = paginateResults(hydratedMatches.data, page, pageSize);
 
-        if (strategy.seniorityLevel !== "Any" && pageCandidates.length > 0) {
+        if (resolvedStrategy.seniorityLevel !== "Any" && pageCandidates.length > 0) {
             pageCandidates = await EvaluatorAgent.evaluateCandidates(query, pageCandidates);
         }
 
-        const finalResult = { data: pageCandidates, total: hydratedMatches.total };
+        const finalResult: SearchResult = {
+            data: pageCandidates,
+            total: hydratedMatches.total,
+            graphTelemetry: graphMetrics,
+        };
 
         if (page === 1 && finalResult.data.length > 0) {
             SemanticCache.set(query, filters, finalResult, queryVector)
                 .catch((err) => console.error("Cache Write Error", err));
         }
 
+        graphMetrics.blendVariant = finalResult.data[0]?.blendVariant;
+        await safeRecordGraphMetrics(graphMetrics);
+
         return finalResult;
 
     } catch (error) {
         console.error("Vector Search Failed", error);
-        return { data: [], total: 0 };
+        graphMetrics.graphFallbackUsed = true;
+        await safeRecordGraphMetrics(graphMetrics);
+        return { data: [], total: 0, graphTelemetry: graphMetrics };
     }
 }
 

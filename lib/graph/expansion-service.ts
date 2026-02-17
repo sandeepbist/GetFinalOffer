@@ -1,6 +1,5 @@
 import { createHash } from "crypto";
 import { desc, eq } from "drizzle-orm";
-import { redis } from "@/lib/redis";
 import {
   getGraphContainsFallbackDepth,
   getGraphContainsPathLimitPerSeed,
@@ -41,6 +40,13 @@ interface Neo4jExpansionRow {
   idfScore?: number;
 }
 
+interface RedisClientLike {
+  get(key: string): Promise<string | null>;
+  setex(key: string, seconds: number, value: string): Promise<unknown>;
+  del(key: string): Promise<unknown>;
+}
+
+let cachedRedisClient: RedisClientLike | null | undefined;
 
 function toCacheKey(
   query: string,
@@ -83,6 +89,24 @@ async function getActiveTaxonomyVersion(): Promise<number> {
     expiresAt: now + TAXONOMY_VERSION_CACHE_TTL_MS,
   };
   return version;
+}
+
+async function getRedisClient(): Promise<RedisClientLike | null> {
+  if (cachedRedisClient !== undefined) {
+    return cachedRedisClient;
+  }
+
+  try {
+    const redisModule = await import("@/lib/redis");
+    cachedRedisClient = redisModule.redis;
+  } catch (error) {
+    if (process.env.REDIS_URL) {
+      throw error;
+    }
+    cachedRedisClient = null;
+  }
+
+  return cachedRedisClient;
 }
 
 export function buildSeedKeywordsForTest(query: string, hints: string[] = []): SeedBundle {
@@ -285,20 +309,23 @@ export async function expandSkillsFromGraph(
   const policyVersion = getGraphPolicyVersion();
   const taxonomyVersion = await getActiveTaxonomyVersion();
   const cacheKey = toCacheKey(query, taxonomyVersion, policyVersion);
+  const redis = await getRedisClient();
 
-  const cachedRaw = await redis.get(cacheKey);
-  if (cachedRaw) {
-    try {
-      const cached = JSON.parse(cachedRaw) as GraphExpansionResult;
-      return {
-        ...cached,
-        cacheHit: true,
-        latencyMs: Date.now() - start,
-        taxonomyVersion,
-        policyVersion,
-      };
-    } catch {
-      await redis.del(cacheKey);
+  if (redis) {
+    const cachedRaw = await redis.get(cacheKey);
+    if (cachedRaw) {
+      try {
+        const cached = JSON.parse(cachedRaw) as GraphExpansionResult;
+        return {
+          ...cached,
+          cacheHit: true,
+          latencyMs: Date.now() - start,
+          taxonomyVersion,
+          policyVersion,
+        };
+      } catch {
+        await redis.del(cacheKey);
+      }
     }
   }
 
@@ -372,7 +399,7 @@ export async function expandSkillsFromGraph(
   };
 
   const shouldCachePayload = !fallbackUsed && getGraphBreakerState() !== "open";
-  if (shouldCachePayload) {
+  if (shouldCachePayload && redis) {
     await redis.setex(cacheKey, getGraphCacheTtlSeconds(), JSON.stringify(payload));
   }
 

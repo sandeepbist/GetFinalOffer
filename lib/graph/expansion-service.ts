@@ -1,7 +1,5 @@
 import { createHash } from "crypto";
 import { desc, eq } from "drizzle-orm";
-import db from "@/db";
-import { gfoGraphTaxonomyVersionsTable } from "@/db/schemas";
 import { redis } from "@/lib/redis";
 import {
   getGraphContainsFallbackDepth,
@@ -61,14 +59,25 @@ async function getActiveTaxonomyVersion(): Promise<number> {
     return cachedTaxonomyVersion.value;
   }
 
-  const [active] = await db
-    .select({ version: gfoGraphTaxonomyVersionsTable.version })
-    .from(gfoGraphTaxonomyVersionsTable)
-    .where(eq(gfoGraphTaxonomyVersionsTable.isActive, true))
-    .orderBy(desc(gfoGraphTaxonomyVersionsTable.version))
-    .limit(1);
+  let version = 1;
+  try {
+    const [{ default: db }, { gfoGraphTaxonomyVersionsTable }] = await Promise.all([
+      import("@/db"),
+      import("@/db/schemas"),
+    ]);
 
-  const version = active?.version ?? 1;
+    const [active] = await db
+      .select({ version: gfoGraphTaxonomyVersionsTable.version })
+      .from(gfoGraphTaxonomyVersionsTable)
+      .where(eq(gfoGraphTaxonomyVersionsTable.isActive, true))
+      .orderBy(desc(gfoGraphTaxonomyVersionsTable.version))
+      .limit(1);
+
+    version = active?.version ?? 1;
+  } catch {
+    version = 1;
+  }
+
   cachedTaxonomyVersion = {
     value: version,
     expiresAt: now + TAXONOMY_VERSION_CACHE_TTL_MS,

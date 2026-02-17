@@ -1,7 +1,7 @@
 const PROTECTED_TOKEN_MAP: Array<[RegExp, string]> = [
-  [/\bc\+\+\b/gi, "cpp"],
+  [/c\+\+/gi, "cpp"],
   [/\bc#/gi, "csharp"],
-  [/\b\.net\b/gi, "dotnet"],
+  [/\.net\b/gi, "dotnet"],
   [/\bnode\.js\b/gi, "nodejs"],
   [/\breact\.js\b/gi, "react"],
   [/\bts\b/gi, "typescript"],

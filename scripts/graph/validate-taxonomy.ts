@@ -118,11 +118,26 @@ export function validateTaxonomyDocument(doc: TaxonomyDoc): string[] {
 }
 
 export function main() {
-  const filePath =
-    process.argv[2] ||
-    path.resolve(process.cwd(), "data/skill-graph/taxonomy.v1.json");
+  const args = process.argv.slice(2).filter((arg) => arg !== "--");
+  let filePath: string | undefined;
 
-  const raw = fs.readFileSync(filePath, "utf8");
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if ((arg === "--input" || arg === "-i") && args[i + 1]) {
+      filePath = args[i + 1];
+      break;
+    }
+    if (!arg.startsWith("-")) {
+      filePath = arg;
+      break;
+    }
+  }
+
+  const resolvedPath = filePath
+    ? path.resolve(process.cwd(), filePath)
+    : path.resolve(process.cwd(), "data/skill-graph/taxonomy.v1.json");
+
+  const raw = fs.readFileSync(resolvedPath, "utf8");
   const taxonomy = JSON.parse(raw) as TaxonomyDoc;
   const errors = validateTaxonomyDocument(taxonomy);
 

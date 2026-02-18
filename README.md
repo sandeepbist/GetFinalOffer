@@ -108,6 +108,7 @@ pnpm exec tsx -r dotenv/config workers/index.ts
 - `DATABASE_URL`
 - `DB_MAX_CONNECTIONS` (optional)
 - `REDIS_URL`
+- `WORKER_DRAIN_DELAY_SECONDS` (optional, seconds; default `300`, valid range `1-600`; tuned for low-traffic/free-tier Redis)
 - `OPENAI_API_KEY`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY` or `NEXT_PUBLIC_SUPABASE_ANON_KEY`

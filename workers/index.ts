@@ -1,4 +1,4 @@
-import "dotenv/config";
+﻿import "dotenv/config";
 
 import {
   vectorizerQueue,
@@ -14,12 +14,14 @@ import { flushGraphMetricsProcessor } from "./graph-metrics-flush-worker";
 import { graphAlertProcessor } from "./graph-alert-worker";
 import { rankGraphProposalsProcessor } from "./graph-proposal-ranker";
 import { runAnalyticsWorker } from "./analytics-worker";
+import { getWorkerDrainDelaySeconds } from "@/lib/worker-config";
 const SYNC_INTERVAL_MS = 10 * 60 * 1000;
 const GRAPH_METRIC_FLUSH_INTERVAL_MS = 60 * 1000;
 const GRAPH_ALERT_INTERVAL_MS = 5 * 60 * 1000;
 const GRAPH_PROPOSAL_RANK_INTERVAL_MS = 60 * 60 * 1000;
 
-console.log("🚀 Starting Agentic Pipeline...");
+console.log(`[WorkerConfig] drainDelaySeconds=${getWorkerDrainDelaySeconds()}`);
+console.log("ðŸš€ Starting Agentic Pipeline...");
 
 extractorWorker.on("completed", async (job, result) => {
   if (result) {
@@ -41,12 +43,12 @@ broadcasterWorker.on("failed", (job, err) => console.error(`[Broadcaster] Failed
 graphSyncWorker.on("failed", (job, err) => console.error(`[GraphSync] Failed ${job?.id}`, err));
 graphSyncWorker.on("completed", (job, result) => {
     if (result) {
-        console.log(`[GraphSync] ✅ Synced candidate graph for ${result.userId}`);
+        console.log(`[GraphSync] âœ… Synced candidate graph for ${result.userId}`);
     }
 });
 
 runAnalyticsWorker().catch((err: unknown) => {
-  console.error("🔥 Analytics Worker Critical Failure:", err);
+  console.error("ðŸ”¥ Analytics Worker Critical Failure:", err);
 });
 
 
@@ -103,7 +105,7 @@ async function runGraphProposalRanking() {
 runGraphProposalRanking();
 setInterval(runGraphProposalRanking, GRAPH_PROPOSAL_RANK_INTERVAL_MS);
 
-console.log("✅ All Systems Operational: Pipeline + Sync Interval");
+console.log("âœ… All Systems Operational: Pipeline + Sync Interval");
 
 
 // Apply when in High level Prod
@@ -122,7 +124,7 @@ console.log("✅ All Systems Operational: Pipeline + Sync Interval");
 // import { broadcasterWorker } from "./ingestion/Broadcaster";
 // import { profileSyncProcessor } from "./profile-sync-worker";
 
-// console.log("🚀 Starting Agentic Pipeline...");
+// console.log("ðŸš€ Starting Agentic Pipeline...");
 
 // extractorWorker.on("completed", async (job, result) => {
 //     if (result) {
@@ -169,9 +171,11 @@ console.log("✅ All Systems Operational: Pipeline + Sync Interval");
 //             removeOnComplete: true
 //         }
 //     );
-//     console.log("💓 Sync Heartbeat Scheduled");
+//     console.log("ðŸ’“ Sync Heartbeat Scheduled");
 // }
 
 // scheduleSyncHeartbeat().catch(console.error);
 
-// console.log("✅ All Systems Operational: Ingestion + Sync");
+// console.log("âœ… All Systems Operational: Ingestion + Sync");
+
+

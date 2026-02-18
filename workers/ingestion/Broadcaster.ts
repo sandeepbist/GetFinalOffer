@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import { redis } from "@/lib/redis";
 import { queueGraphSync } from "@/lib/graph/sync";
 import { normalizeSkill } from "@/lib/graph/normalize-skill";
+import { getWorkerDrainDelaySeconds } from "@/lib/worker-config";
 import { VectorizerOutput } from "./ingestion-dto";
 
 async function syncShadowProfile(userId: string) {
@@ -98,7 +99,7 @@ export const broadcasterWorker = new Worker<VectorizerOutput>(
     {
         connection: redis as unknown as ConnectionOptions,
         concurrency: 1,
-        drainDelay: 10 * 60 * 1000,
+        drainDelay: getWorkerDrainDelaySeconds(),
         skipStalledCheck: true
     }
 );

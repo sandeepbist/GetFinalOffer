@@ -5,6 +5,7 @@ import { gfoCandidateResumeChunksTable } from "@/db/schemas";
 import { eq } from "drizzle-orm";
 import { generateEmbeddingsBatch } from "@/lib/ai";
 import { redis } from "@/lib/redis";
+import { getWorkerDrainDelaySeconds } from "@/lib/worker-config";
 import {
     ExtractorOutput,
     VectorizerOutput
@@ -84,7 +85,7 @@ export const vectorizerWorker = new Worker<ExtractorOutput, VectorizerOutput>(
     {
         connection: redis as unknown as ConnectionOptions,
         concurrency: 1,
-        drainDelay: 10 * 60 * 1000,
+        drainDelay: getWorkerDrainDelaySeconds(),
         skipStalledCheck: true
     }
 );

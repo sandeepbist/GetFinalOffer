@@ -1,5 +1,6 @@
 import { Queue, Worker, type Processor, type ConnectionOptions } from "bullmq";
 import { redis } from "./redis";
+import { getWorkerDrainDelaySeconds } from "./worker-config";
 
 const connection = redis as unknown as ConnectionOptions;
 
@@ -54,7 +55,7 @@ export const createWorker = (name: string, processor: Processor, concurrency = 1
     connection,
     concurrency,
     lockDuration: 5 * 60 * 1000,
-    drainDelay: 60 * 1000,
+    drainDelay: getWorkerDrainDelaySeconds(),
     skipStalledCheck: true,
     maxStalledCount: 0,
   });

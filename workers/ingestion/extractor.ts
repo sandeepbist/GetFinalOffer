@@ -6,6 +6,7 @@ import { sql } from "drizzle-orm";
 import { extractTextFromPDF } from "@/lib/pdf";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { redis } from "@/lib/redis";
+import { getWorkerDrainDelaySeconds } from "@/lib/worker-config";
 import {
     IngestionJobPayload,
     ExtractorOutput,
@@ -125,7 +126,7 @@ export const extractorWorker = new Worker<IngestionJobPayload, ExtractorOutput>(
     {
         connection: redis as unknown as ConnectionOptions,
         concurrency: 1,
-        drainDelay: 10 * 60 * 1000,
+        drainDelay: getWorkerDrainDelaySeconds(),
         skipStalledCheck: true
     }
 );

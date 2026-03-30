@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { eq, inArray } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import db from "@/db";
 import {
@@ -7,6 +7,8 @@ import {
   gfoCandidateSkillsTable,
   gfoSkillsLibraryTable,
   gfoCandidateInterviewProgressTable,
+  gfoVerificationRequestsTable,
+  gfoVerificationDocumentsTable,
 } from "@/db/schemas";
 import type {
   InterviewProgressEntryDTO,
@@ -18,6 +20,7 @@ import { resumeQueue } from "@/lib/queue";
 import { queueProfileSync } from "@/lib/sync-buffer";
 import { queueGraphSync } from "@/lib/graph/sync";
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { removeVerificationDocs } from "@/lib/verification-storage";
 import { ApiErrors, successResponse } from "@/features/common/api/response";
 import { validateFile } from "@/features/common/api/file-validation";
 
@@ -168,7 +171,7 @@ export async function POST(req: NextRequest) {
           roundsCleared: e.roundsCleared,
           totalRounds: e.totalRounds,
           status: e.status,
-          verificationStatus: e.verificationStatus,
+          verificationStatus: "unverified",
           dateCleared: new Date(e.dateCleared),
         }))
       );
@@ -244,6 +247,36 @@ export async function PATCH(req: NextRequest) {
 
     const toDelete = existingIds.filter((id) => !incomingIds.includes(id));
     if (toDelete.length > 0) {
+      // Find verification requests being orphaned
+      const orphanedRequests = await db
+        .select({ id: gfoVerificationRequestsTable.id })
+        .from(gfoVerificationRequestsTable)
+        .where(
+          and(
+            eq(gfoVerificationRequestsTable.scope, "candidate_interview"),
+            inArray(gfoVerificationRequestsTable.targetId, toDelete)
+          )
+        );
+
+      if (orphanedRequests.length > 0) {
+        const orphanedRequestIds = orphanedRequests.map((r) => r.id);
+
+        // Fetch storage paths for Supabase cleanup
+        const orphanedDocs = await db
+          .select({ storagePath: gfoVerificationDocumentsTable.storagePath })
+          .from(gfoVerificationDocumentsTable)
+          .where(inArray(gfoVerificationDocumentsTable.verificationRequestId, orphanedRequestIds));
+
+        // Remove files from Supabase (best-effort)
+        if (orphanedDocs.length > 0) {
+          await removeVerificationDocs(orphanedDocs.map((d) => d.storagePath));
+        }
+
+        // Delete DB rows (documents cascade via FK)
+        await db
+          .delete(gfoVerificationRequestsTable)
+          .where(inArray(gfoVerificationRequestsTable.id, orphanedRequestIds));
+      }
       await db
         .delete(gfoCandidateInterviewProgressTable)
         .where(inArray(gfoCandidateInterviewProgressTable.id, toDelete));
@@ -259,7 +292,8 @@ export async function PATCH(req: NextRequest) {
             roundsCleared: e.roundsCleared,
             totalRounds: e.totalRounds,
             status: e.status,
-            verificationStatus: e.verificationStatus,
+            verificationStatus: "unverified",
+            verificationRequestedAt: null,
             dateCleared: new Date(e.dateCleared),
           })
           .where(eq(gfoCandidateInterviewProgressTable.id, e.id));
@@ -272,7 +306,7 @@ export async function PATCH(req: NextRequest) {
           roundsCleared: e.roundsCleared,
           totalRounds: e.totalRounds,
           status: e.status,
-          verificationStatus: e.verificationStatus,
+          verificationStatus: "unverified",
           dateCleared: new Date(e.dateCleared),
         });
       }
@@ -305,7 +339,7 @@ export async function PUT(req: NextRequest) {
       location: body.location,
       bio: body.bio,
       resumeUrl: body.resumeUrl ?? "",
-      verificationStatus: body.verificationStatus ?? "unverified",
+      verificationStatus: "unverified",
     })
     .onConflictDoUpdate({
       target: gfoCandidatesTable.userId,

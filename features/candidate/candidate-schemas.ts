@@ -264,21 +264,56 @@ export const gfoCandidateInterviewProgressTable = pgTable(
   }
 );
 
-export const gfoInterviewDocumentsTable = pgTable("gfo_interview_documents", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  interviewProgressId: text("interview_progress_id")
-    .notNull()
-    .references(() => gfoCandidateInterviewProgressTable.id, {
-      onDelete: "cascade",
-    }),
-  documentUrl: text("document_url").notNull(),
-  subject: text("subject").notNull(),
-  note: text("note"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+export const gfoVerificationRequestsTable = pgTable(
+  "gfo_verification_requests",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    scope: text("scope").notNull(),
+    // "candidate_profile" | "candidate_interview" | "recruiter"
+    targetId: text("target_id").notNull(),
+    // userId for profile/recruiter, interviewProgressId for interview
+    requestedByUserId: text("requested_by_user_id")
+      .notNull()
+      .references(() => gfoUserTable.id, { onDelete: "cascade" }),
+    subject: text("subject").notNull(),
+    notes: text("notes"),
+    status: text("status").notNull().default("pending"),
+    // "pending" | "approved" | "rejected"
+    requestedAt: timestamp("requested_at").notNull().defaultNow(),
+    reviewedAt: timestamp("reviewed_at"),
+    reviewedByUserId: text("reviewed_by_user_id"),
+    decisionNote: text("decision_note"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("vr_scope_target_idx").on(table.scope, table.targetId),
+    index("vr_status_idx").on(table.status),
+    index("vr_requester_idx").on(table.requestedByUserId),
+  ]
+);
+
+export const gfoVerificationDocumentsTable = pgTable(
+  "gfo_verification_documents",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    verificationRequestId: text("verification_request_id")
+      .notNull()
+      .references(() => gfoVerificationRequestsTable.id, {
+        onDelete: "cascade",
+      }),
+    storageBucket: text("storage_bucket").notNull().default("Verifications"),
+    storagePath: text("storage_path").notNull(),
+    originalFileName: text("original_file_name").notNull(),
+    mimeType: text("mime_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  }
+);
 
 export const gfoCandidatesRelations = relations(
   gfoCandidatesTable,
@@ -356,16 +391,27 @@ export const gfoCandidateInterviewProgressRelations = relations(
       fields: [gfoCandidateInterviewProgressTable.companyId],
       references: [gfoCompaniesTable.id],
     }),
-    documents: many(gfoInterviewDocumentsTable),
+    verificationRequests: many(gfoVerificationRequestsTable),
   })
 );
 
-export const gfoInterviewDocumentsRelations = relations(
-  gfoInterviewDocumentsTable,
+export const gfoVerificationRequestsRelations = relations(
+  gfoVerificationRequestsTable,
+  ({ one, many }) => ({
+    requestedBy: one(gfoUserTable, {
+      fields: [gfoVerificationRequestsTable.requestedByUserId],
+      references: [gfoUserTable.id],
+    }),
+    documents: many(gfoVerificationDocumentsTable),
+  })
+);
+
+export const gfoVerificationDocumentsRelations = relations(
+  gfoVerificationDocumentsTable,
   ({ one }) => ({
-    interviewProgress: one(gfoCandidateInterviewProgressTable, {
-      fields: [gfoInterviewDocumentsTable.interviewProgressId],
-      references: [gfoCandidateInterviewProgressTable.id],
+    request: one(gfoVerificationRequestsTable, {
+      fields: [gfoVerificationDocumentsTable.verificationRequestId],
+      references: [gfoVerificationRequestsTable.id],
     }),
   })
 );

@@ -50,6 +50,13 @@
       "when": 1771296188381,
       "tag": "20260217024308_slippery_human_torch",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1774813810309,
+      "tag": "20260329195010_slimy_swordsman",
+      "breakpoints": true
     }
   ]
 }

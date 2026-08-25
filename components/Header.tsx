@@ -20,7 +20,6 @@ import {
   Search,
   LayoutDashboard,
   LogOut,
-  Sparkles,
 } from "lucide-react";
 import { useTheme } from "@/components/providers";
 

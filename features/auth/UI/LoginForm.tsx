@@ -42,11 +42,12 @@ export function LoginForm() {
           email: values.email,
           password: values.password,
           rememberMe: values.remember,
-          callbackURL: "/",
+          callbackURL: "/dashboard",
         },
         {
           onSuccess: () => {
-            router.push("/");
+            router.push("/dashboard");
+            router.refresh();
           },
           onError: (ctx) => {
             form.setError("email", {

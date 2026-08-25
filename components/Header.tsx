@@ -4,11 +4,24 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { authClient, signOut } from "@/lib/auth/auth-client";
-import { motion, useScroll, useMotionValueEvent, AnimatePresence } from "framer-motion";
+import {
+  motion,
+  useScroll,
+  useMotionValueEvent,
+  AnimatePresence,
+} from "framer-motion";
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Sun, Moon, Menu, X } from "lucide-react";
+import {
+  Sun,
+  Moon,
+  Menu,
+  X,
+  Search,
+  LayoutDashboard,
+  LogOut,
+  Sparkles,
+} from "lucide-react";
 import { useTheme } from "@/components/providers";
 
 export function Header() {
@@ -38,6 +51,7 @@ export function Header() {
       fetchOptions: {
         onSuccess: () => {
           router.push("/auth");
+          router.refresh();
         },
       },
     });
@@ -47,120 +61,158 @@ export function Header() {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
   };
 
-  const isLoggedInView = !!session?.user || isSigningOut;
+  const user = session?.user;
+  const userRole = (user as { role?: string })?.role;
+  const isLoggedIn = !!user && !isSigningOut;
 
-  const navLinks = [
-    { href: "#how-it-works", label: "How it Works" },
-    { href: "#features", label: "Features" },
+  const landingLinks = [
+    { href: "/#how-it-works", label: "How it Works" },
+    { href: "/#features", label: "Features" },
   ];
+
+  const recruiterLinks = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/recruiter/candidates", label: "Search Candidates", icon: Search },
+  ];
+
+  const candidateLinks = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  ];
+
+  const activeNavLinks = isLoggedIn
+    ? userRole === "recruiter"
+      ? recruiterLinks
+      : candidateLinks
+    : landingLinks;
 
   return (
     <>
-      <motion.header
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      <header
         className={cn(
-          "sticky top-0 inset-x-0 z-50 transition-all duration-500",
+          "sticky top-0 inset-x-0 z-50 transition-all duration-300",
           scrolled
-            ? "h-16 bg-background/80 backdrop-blur-xl border-b border-border/60 shadow-[0_8px_24px_-20px_var(--shadow)]"
-            : "h-20 bg-transparent border-transparent",
+            ? "h-16 bg-background/85 backdrop-blur-xl border-b border-border/70 shadow-sm"
+            : "h-20 bg-background/40 backdrop-blur-md border-b border-border/20",
         )}
       >
         <div
           className={cn(
-            "absolute top-0 left-0 right-0 h-px transition-opacity duration-500",
-            scrolled ? "opacity-100" : "opacity-0"
+            "absolute top-0 left-0 right-0 h-px transition-opacity duration-300",
+            scrolled ? "opacity-100" : "opacity-0",
           )}
         >
           <div className="gradient-divider" />
         </div>
 
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
+          {/* Logo */}
           <Link
-            href="/"
+            href={isLoggedIn ? "/dashboard" : "/"}
             className="font-bold text-xl tracking-tight text-foreground hover:text-primary transition-colors flex items-center gap-2 font-[var(--font-display)]"
           >
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shadow-sm shadow-primary/50" />
             GetFinalOffer
           </Link>
 
+          {/* Desktop Navigation */}
           <nav className="flex items-center gap-4 md:gap-6">
-            {isPending ? (
-              <div className="flex items-center gap-4">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-9 w-24 rounded-full" />
-              </div>
-            ) : (
-              <>
-                {!isLoggedInView && (
-                  <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
-                    {navLinks.map((link) => (
+            <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
+              {isLoggedIn
+                ? activeNavLinks.map((link) => {
+                    const isActive = pathname === link.href;
+                    return (
                       <Link
                         key={link.href}
                         href={link.href}
-                        className="relative py-1 hover:text-foreground transition-colors group cursor-pointer"
+                        className={cn(
+                          "relative py-1 transition-colors flex items-center gap-1.5",
+                          isActive
+                            ? "text-foreground font-semibold"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
                       >
-                        {link.label}
-                        <span className="absolute bottom-0 left-0 w-0 h-px bg-primary transition-all duration-300 group-hover:w-full" />
+                        <span>{link.label}</span>
+                        {isActive && (
+                          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                        )}
                       </Link>
-                    ))}
-                  </div>
-                )}
+                    );
+                  })
+                : landingLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className="relative py-1 text-muted-foreground hover:text-foreground transition-colors group"
+                    >
+                      {link.label}
+                      <span className="absolute bottom-0 left-0 w-0 h-px bg-primary transition-all duration-300 group-hover:w-full" />
+                    </Link>
+                  ))}
+            </div>
+
+            {/* Theme Switcher */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="rounded-full text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
+              aria-label={
+                resolvedTheme === "dark"
+                  ? "Switch to light mode"
+                  : "Switch to dark mode"
+              }
+            >
+              {resolvedTheme === "dark" ? (
+                <Sun className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Moon className="h-4 w-4" aria-hidden="true" />
+              )}
+            </Button>
+
+            {/* Auth Actions */}
+            {isPending ? (
+              <div className="h-9 w-24 rounded-full bg-muted/60 animate-pulse hidden md:inline-block" />
+            ) : isLoggedIn ? (
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSignOut}
+                  disabled={isSigningOut}
+                  className="rounded-full text-xs font-medium border-border/80 hover:border-muted-foreground hover:bg-muted/80 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>{isSigningOut ? "Signing Out..." : "Sign Out"}</span>
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Button
+                  asChild
+                  size="sm"
+                  className="hidden md:inline-flex rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 px-5 h-9 text-xs font-semibold cursor-pointer"
+                >
+                  <Link href="/auth">
+                    <span>Get Started</span>
+                  </Link>
+                </Button>
 
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={toggleTheme}
-                  className="rounded-full text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
-                  aria-label={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                  onClick={() => setMobileMenuOpen(true)}
+                  className="md:hidden rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
+                  aria-label="Open menu"
                 >
-                  {resolvedTheme === "dark" ? (
-                    <Sun className="h-5 w-5" aria-hidden="true" />
-                  ) : (
-                    <Moon className="h-5 w-5" aria-hidden="true" />
-                  )}
+                  <Menu className="h-5 w-5" aria-hidden="true" />
                 </Button>
-
-                {!isLoggedInView ? (
-                  <div className="flex items-center gap-3">
-                    <Button
-                      asChild
-                      size="sm"
-                      className="hidden md:inline-flex rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25 px-6 h-10 text-sm font-medium cursor-pointer"
-                    >
-                      <Link href="/auth">Get Started</Link>
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setMobileMenuOpen(true)}
-                      className="md:hidden rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
-                      aria-label="Open menu"
-                    >
-                      <Menu className="h-5 w-5" aria-hidden="true" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSignOut}
-                      disabled={isSigningOut}
-                      className="rounded-full text-muted-foreground border-border hover:border-muted-foreground hover:bg-muted disabled:opacity-50 cursor-pointer"
-                    >
-                      {isSigningOut ? "Signing Out..." : "Sign Out"}
-                    </Button>
-                  </div>
-                )}
-              </>
+              </div>
             )}
           </nav>
         </div>
-      </motion.header>
+      </header>
 
+      {/* Mobile Drawer */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -193,12 +245,12 @@ export function Header() {
               </div>
 
               <nav className="p-6 space-y-2">
-                {navLinks.map((link, index) => (
+                {activeNavLinks.map((link, index) => (
                   <motion.div
                     key={link.href}
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 + index * 0.05 }}
+                    transition={{ delay: 0.05 + index * 0.04 }}
                   >
                     <Link
                       href={link.href}
@@ -210,21 +262,32 @@ export function Header() {
                   </motion.div>
                 ))}
 
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.25 }}
-                  className="pt-4"
-                >
-                  <Button
-                    asChild
-                    className="w-full rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25 h-12 text-base font-medium cursor-pointer"
-                  >
-                    <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>
-                      Get Started
-                    </Link>
-                  </Button>
-                </motion.div>
+                <div className="pt-4 border-t border-border/60">
+                  {isLoggedIn ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleSignOut();
+                      }}
+                      className="w-full rounded-xl h-11 text-sm font-medium"
+                    >
+                      Sign Out
+                    </Button>
+                  ) : (
+                    <Button
+                      asChild
+                      className="w-full rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25 h-11 text-sm font-medium cursor-pointer"
+                    >
+                      <Link
+                        href="/auth"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Get Started
+                      </Link>
+                    </Button>
+                  )}
+                </div>
               </nav>
             </motion.div>
           </motion.div>

@@ -16,7 +16,7 @@ export interface GraphSyncJobPayload {
 export async function queueGraphSync(payload: GraphSyncJobPayload): Promise<void> {
   try {
     await graphSyncQueue.add("sync-candidate-graph", payload, {
-      jobId: `graph-sync:${payload.userId}`,
+      jobId: `graph-sync-${payload.userId}`,
       removeOnComplete: true,
       removeOnFail: { count: 50 },
     });

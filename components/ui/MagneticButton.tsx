@@ -69,9 +69,9 @@ export function MagneticButton({
                 className
             )}
         >
-            <span className="relative z-10">{children}</span>
+            <span className="relative z-10 flex items-center justify-center gap-2.5">{children}</span>
             <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0"
+                className="absolute inset-0 bg-linear-to-r from-white/0 via-white/20 to-white/0"
                 initial={{ x: "-100%" }}
                 animate={{ x: isHovered ? "100%" : "-100%" }}
                 transition={{ duration: 0.6, ease: "easeInOut" }}
@@ -104,7 +104,7 @@ export function GradientButton({
     const variantClasses = {
         primary: cn(
             "bg-primary text-primary-foreground",
-            "before:absolute before:inset-0 before:bg-gradient-to-r before:from-primary before:to-primary/80",
+            "before:absolute before:inset-0 before:bg-linear-to-r before:from-primary before:to-primary/80",
             "before:opacity-0 before:transition-opacity before:duration-300",
             "hover:before:opacity-100"
         ),

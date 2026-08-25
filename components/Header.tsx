@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { authClient, signOut } from "@/lib/auth/auth-client";
 import {
@@ -24,7 +24,6 @@ import {
 import { useTheme } from "@/components/providers";
 
 export function Header() {
-  const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
@@ -46,14 +45,13 @@ export function Header() {
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
-    await signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          router.push("/auth");
-          router.refresh();
-        },
-      },
-    });
+    try {
+      await signOut();
+    } catch (err) {
+      console.warn("SignOut error:", err);
+    } finally {
+      window.location.href = "/auth";
+    }
   };
 
   const toggleTheme = () => {

@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
     "@napi-rs/canvas",
     "@opentelemetry/auto-instrumentations-node",
     "@opentelemetry/sdk-node",
+    "@xenova/transformers",
+    "onnxruntime-node",
   ],
 };
 

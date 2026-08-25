@@ -23,6 +23,7 @@ import {
     decideGraphExecution,
     expandGraphQuery,
 } from "@/features/graph/graph-data-access";
+import { crossEncoderRerank } from "@/lib/reranker/cross-encoder";
 import type {
     CandidateSummaryDTO,
     CandidateSearchFilters,
@@ -295,6 +296,10 @@ export async function searchCandidatesHybrid(
             getGraphBlendWeight(),
             buildBlendVariant(getGraphBlendWeight())
         );
+
+        if (query.trim() && hydratedMatches.data.length > 0) {
+            hydratedMatches.data = await crossEncoderRerank(query, hydratedMatches.data);
+        }
 
         let pageCandidates = paginateResults(hydratedMatches.data, page, pageSize);
 

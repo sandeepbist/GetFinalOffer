@@ -247,7 +247,18 @@ export async function searchCandidatesHybrid(
             });
         };
 
-        const response = await runSearch(THRESHOLD_STRICT, false);
+        const [response, graphCandidateIds] = await Promise.all([
+            runSearch(THRESHOLD_STRICT, false),
+            (graphExpansion && graphExpansion.expandedSkills.length > 0)
+                ? SearchEngine.searchByExpandedSkills(
+                    graphExpansion.expandedSkills.map((s) => s.normalizedSkill),
+                    filters,
+                    1,
+                    LIVE_POOL_SIZE
+                  ).then((res) => res.ids)
+                : Promise.resolve([] as string[])
+        ]);
+
         let rawMatches = (response.data || []) as CandidateMatchResult[];
 
         if (rawMatches.length === 0) {
@@ -260,15 +271,7 @@ export async function searchCandidatesHybrid(
             matchHighlights[m.candidate_id] = m.match_content;
         });
 
-        let graphCandidateIds: string[] = [];
-        if (graphExpansion && graphExpansion.expandedSkills.length > 0) {
-            const graphResult = await SearchEngine.searchByExpandedSkills(
-                graphExpansion.expandedSkills.map((s) => s.normalizedSkill),
-                filters,
-                1,
-                LIVE_POOL_SIZE
-            );
-            graphCandidateIds = graphResult.ids;
+        if (graphCandidateIds.length > 0) {
             graphMetrics.graphNewCandidatesFound = graphCandidateIds.filter((id) => !(id in matchScores)).length;
         }
 

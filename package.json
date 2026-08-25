@@ -24,6 +24,7 @@
     "graph:import-esco": "tsx scripts/graph/import-esco.ts",
     "graph:import-onet": "tsx scripts/graph/import-onet.ts",
     "graph:build-tech": "tsx scripts/graph/build-tech-taxonomy.ts",
+    "graph:generate-v3": "tsx scripts/graph/generate-taxonomy-v3.ts",
     "graph:warmup": "tsx scripts/graph/warmup.ts",
     "graph:benchmark": "tsx scripts/graph/benchmark.ts"
   },

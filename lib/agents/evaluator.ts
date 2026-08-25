@@ -30,7 +30,8 @@ async function evaluateCandidatesRaw(
             { role: "user", content: candidatesContext }
         ],
         response_format: { type: "json_object" },
-        temperature: 0
+        temperature: 0,
+        max_tokens: 250,
     });
 
     const evaluations = JSON.parse(completion.choices[0].message.content || "{}").evaluations || {};

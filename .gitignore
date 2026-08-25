@@ -72,6 +72,7 @@ _tmp_*
 /data/skill-graph/taxonomy.v1.onet.json
 /data/skill-graph/taxonomy.v2.tech.json
 !/data/skill-graph/taxonomy.v1.json
+!/data/skill-graph/taxonomy.v3.json
 !/data/skill-graph/mappings/
 !/data/skill-graph/mappings/tech-synonyms.json
 # vercel

@@ -126,7 +126,8 @@ CRITICAL: Return ONLY valid JSON. No markdown, no explanation, no preamble.`
             }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.3
+        temperature: 0.2,
+        max_tokens: 300,
     });
 
     const raw = JSON.parse(completion.choices[0].message.content || "{}");

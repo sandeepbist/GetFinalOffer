@@ -6,7 +6,7 @@ interface GraphCypherPayload {
   params?: Record<string, unknown>;
 }
 
-const GRAPH_BREAKER_TIMEOUT_MS = Number(process.env.GRAPH_BREAKER_TIMEOUT_MS || "200");
+const GRAPH_BREAKER_TIMEOUT_MS = Number(process.env.GRAPH_BREAKER_TIMEOUT_MS || "1500");
 const GRAPH_BREAKER_VOLUME_THRESHOLD = Number(
   process.env.GRAPH_BREAKER_VOLUME_THRESHOLD || "5"
 );
@@ -15,7 +15,7 @@ const graphQueryBreaker = new CircuitBreaker(
   async (payload: GraphCypherPayload) =>
     await runCypherRead(payload.query, payload.params ?? {}),
   {
-    timeout: Number.isFinite(GRAPH_BREAKER_TIMEOUT_MS) ? GRAPH_BREAKER_TIMEOUT_MS : 200,
+    timeout: Number.isFinite(GRAPH_BREAKER_TIMEOUT_MS) ? GRAPH_BREAKER_TIMEOUT_MS : 1500,
     errorThresholdPercentage: 50,
     resetTimeout: 30_000,
     volumeThreshold: Number.isFinite(GRAPH_BREAKER_VOLUME_THRESHOLD)

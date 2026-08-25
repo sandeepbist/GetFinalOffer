@@ -1,12 +1,10 @@
 import fs from "fs";
 import path from "path";
-import { sql } from "drizzle-orm";
-import db from "@/db";
-import {
-  gfoGraphTaxonomyVersionsTable,
-  gfoSkillAliasesTable,
-  gfoSkillsLibraryTable,
-} from "@/db/schemas";
+import dotenv from "dotenv";
+
+dotenv.config({ path: ".env.local" });
+dotenv.config({ path: ".env" });
+
 import { normalizeSkill } from "@/lib/graph/normalize-skill";
 import { runCypherWrite } from "@/lib/graph/driver";
 import { validateTaxonomyDocument } from "./validate-taxonomy";
@@ -98,6 +96,19 @@ function chunk<T>(arr: T[], size: number): T[][] {
 }
 
 async function upsertPostgresTaxonomy(taxonomy: TaxonomyDoc): Promise<void> {
+  if (!process.env.DATABASE_URL) {
+    console.log("[PG] DATABASE_URL not provided. Skipping PostgreSQL taxonomy sync.");
+    return;
+  }
+
+  const { sql } = await import("drizzle-orm");
+  const { default: db } = await import("@/db");
+  const {
+    gfoGraphTaxonomyVersionsTable,
+    gfoSkillAliasesTable,
+    gfoSkillsLibraryTable,
+  } = await import("@/db/schemas");
+
   const skillById = new Map(taxonomy.skills.map((skill) => [skill.id, skill]));
 
   const seenNames = new Set<string>();

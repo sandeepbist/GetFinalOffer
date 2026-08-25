@@ -109,18 +109,29 @@ function mapSearchError(error: unknown): SearchUiError {
   };
 }
 
-function AIReasoningBadge({ reasoning }: { reasoning?: string }) {
-  if (!reasoning) return null;
+function AIReasoningBadge({ reasoning, isSearching }: { reasoning?: string; isSearching?: boolean }) {
+  if (!reasoning) {
+    if (!isSearching) return null;
+    return (
+      <div
+        className="ml-2 inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/5 px-2.5 py-0.5 text-xs font-medium text-primary/80 animate-pulse shadow-sm"
+        title="AI is analyzing candidate match..."
+      >
+        <Sparkles className="h-3 w-3 animate-spin text-primary/70" style={{ animationDuration: "3s" }} />
+        <span className="text-[11px] font-medium tracking-tight">Analyzing...</span>
+      </div>
+    );
+  }
 
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="group ml-2 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary transition-all hover:border-primary/30 hover:bg-primary/20">
-          <Bot className="h-3.5 w-3.5" />
+        <button className="group ml-2 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary transition-all duration-200 hover:border-primary/50 hover:bg-primary/20 hover:scale-105 active:scale-95 shadow-sm">
+          <Bot className="h-3.5 w-3.5 text-primary transition-transform group-hover:rotate-12" />
           <span>AI Insight</span>
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0 overflow-hidden shadow-xl border-border" align="start">
+      <PopoverContent className="w-80 p-0 overflow-hidden shadow-2xl border-border/80 rounded-xl" align="start">
         <div className="bg-highlight px-4 py-3 border-b border-border flex items-center gap-2">
           <div className="p-1.5 bg-surface rounded-md shadow-sm border border-border">
             <Bot className="h-4 w-4 text-primary" />
@@ -561,7 +572,7 @@ export default function CandidateSearch() {
                         </h3>
                         <ConfidenceBadge score={c.matchScore || 0} />
                         <GraphMatchBadge candidate={c} />
-                        <AIReasoningBadge reasoning={c.aiReasoning} />
+                        <AIReasoningBadge reasoning={c.aiReasoning} isSearching={loading} />
                       </div>
 
                       <p className="text-sm font-medium text-text">

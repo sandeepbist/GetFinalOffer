@@ -298,7 +298,7 @@ export async function searchCandidatesHybrid(
 
         let pageCandidates = paginateResults(hydratedMatches.data, page, pageSize);
 
-        if (resolvedStrategy.seniorityLevel !== "Any" && pageCandidates.length > 0) {
+        if (query.trim() && pageCandidates.length > 0) {
             pageCandidates = await EvaluatorAgent.evaluateCandidates(query, pageCandidates);
         }
 

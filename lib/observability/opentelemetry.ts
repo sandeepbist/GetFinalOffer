@@ -17,6 +17,9 @@ if (process.env.NEXT_RUNTIME === "nodejs") {
                 "@opentelemetry/instrumentation-fs": { enabled: false },
                 "@opentelemetry/instrumentation-net": { enabled: false },
                 "@opentelemetry/instrumentation-dns": { enabled: false },
+                "@opentelemetry/instrumentation-winston": { enabled: false },
+                "@opentelemetry/instrumentation-bunyan": { enabled: false },
+                "@opentelemetry/instrumentation-pino": { enabled: false },
             }),
         ],
     });

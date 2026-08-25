@@ -2,7 +2,12 @@ import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pdf-parse", "@napi-rs/canvas"],
+  serverExternalPackages: [
+    "pdf-parse",
+    "@napi-rs/canvas",
+    "@opentelemetry/auto-instrumentations-node",
+    "@opentelemetry/sdk-node",
+  ],
 };
 
 export default withSentryConfig(nextConfig, {

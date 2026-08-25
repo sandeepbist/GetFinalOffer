@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 import { useCachedFetch } from "@/hooks/use-cached-fetch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -109,19 +110,8 @@ function mapSearchError(error: unknown): SearchUiError {
   };
 }
 
-function AIReasoningBadge({ reasoning, isSearching }: { reasoning?: string; isSearching?: boolean }) {
-  if (!reasoning) {
-    if (!isSearching) return null;
-    return (
-      <div
-        className="ml-2 inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/5 px-2.5 py-0.5 text-xs font-medium text-primary/80 animate-pulse shadow-sm"
-        title="AI is analyzing candidate match..."
-      >
-        <Sparkles className="h-3 w-3 animate-spin text-primary/70" style={{ animationDuration: "3s" }} />
-        <span className="text-[11px] font-medium tracking-tight">Analyzing...</span>
-      </div>
-    );
-  }
+function AIReasoningBadge({ reasoning }: { reasoning?: string }) {
+  if (!reasoning) return null;
 
   return (
     <Popover>
@@ -149,28 +139,33 @@ function AIReasoningBadge({ reasoning, isSearching }: { reasoning?: string; isSe
 }
 
 function ConfidenceBadge({ score }: { score: number }) {
-  if (!score) return null;
-  const normalized = score <= 1 ? score * 100 : score;
+  if (!score || score <= 0) return null;
+  const normalized = Math.round(score <= 1 ? score * 100 : score);
 
-  if (normalized > 70) {
+  if (normalized >= 70) {
     return (
-      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1 ml-2">
+      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 gap-1 ml-2 font-medium">
         <Sparkles className="w-3 h-3" />
-        {Math.round(normalized)}% Match
+        {normalized}% Match
       </Badge>
     );
   }
 
-  if (normalized < 30) {
+  if (normalized >= 30) {
     return (
-      <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 gap-1 ml-2">
-        <AlertTriangle className="w-3 h-3" />
-        Broad Match ({Math.round(normalized)}%)
+      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/25 gap-1 ml-2 font-medium">
+        <Sparkles className="w-3 h-3 text-primary/70" />
+        {normalized}% Match
       </Badge>
     );
   }
 
-  return null;
+  return (
+    <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25 gap-1 ml-2 font-medium">
+      <AlertTriangle className="w-3 h-3" />
+      Broad Match ({normalized}%)
+    </Badge>
+  );
 }
 
 function GraphMatchBadge({ candidate }: { candidate: CandidateSummaryDTO }) {
@@ -512,7 +507,7 @@ export default function CandidateSearch() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-        className="space-y-4"
+        className={cn("space-y-4 transition-opacity duration-200", loading && candidates.length > 0 && "opacity-60 pointer-events-none")}
       >
         {loading && candidates.length === 0 ? (
           Array.from({ length: skeletonCount }).map((_, idx) => (
@@ -572,7 +567,7 @@ export default function CandidateSearch() {
                         </h3>
                         <ConfidenceBadge score={c.matchScore || 0} />
                         <GraphMatchBadge candidate={c} />
-                        <AIReasoningBadge reasoning={c.aiReasoning} isSearching={loading} />
+                        <AIReasoningBadge reasoning={c.aiReasoning} />
                       </div>
 
                       <p className="text-sm font-medium text-text">

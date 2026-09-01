@@ -1,0 +1,21 @@
+# Keep build contexts lean and secrets out of images.
+.git
+.github
+.next
+node_modules
+playwright-screenshots
+_ts_*
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+coverage
+data/esco
+data/onet
+data/skill-graph/reports
+data/skill-graph/taxonomy.v1.esco.json
+data/skill-graph/taxonomy.v1.onet.json
+data/skill-graph/taxonomy.v2.tech.json
+Dockerfile*
+docker-compose.yml
+e2e

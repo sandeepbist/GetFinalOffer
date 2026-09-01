@@ -44,5 +44,7 @@ jobs:
       - name: Run unit tests
         run: pnpm run test:unit
 
-      - name: Validate curated taxonomy
-        run: pnpm exec tsx scripts/graph/validate-taxonomy.ts data/skill-graph/taxonomy.v1.json
+      - name: Validate committed taxonomies
+        run: |
+          pnpm exec tsx scripts/graph/validate-taxonomy.ts data/skill-graph/taxonomy.v1.json
+          pnpm exec tsx scripts/graph/validate-taxonomy.ts data/skill-graph/taxonomy.v3.json

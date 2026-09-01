@@ -10,9 +10,7 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-ARG DATABASE_URL
-ARG REDIS_URL
-ARG OPENAI_API_KEY
-ARG NEXT_PUBLIC_APP_URL
-
+# All configuration is injected at runtime via the environment
+# (docker run -e DATABASE_URL=... or your orchestrator's env mechanism).
+# Build-time ARGs are not visible at runtime and are intentionally not used.
 CMD ["npx", "tsx", "workers/index.ts"]

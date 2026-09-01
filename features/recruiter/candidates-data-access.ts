@@ -13,6 +13,7 @@ import { generateEmbedding } from "@/lib/ai";
 import { supabase } from "@/lib/supabase";
 import { SemanticCache } from "@/lib/semantic-cache";
 import { SearchEngine } from "@/lib/search-engine";
+import { createResumeSignedUrl } from "@/lib/resume-storage";
 import { StrategistAgent, SearchStrategy } from "@/lib/agents/strategist";
 import { EvaluatorAgent } from "@/lib/agents/evaluator";
 import { getGraphBlendWeight, getGraphTopK } from "@/lib/graph/config";
@@ -44,6 +45,41 @@ interface SearchExecutionContext {
 function paginateResults<T>(items: T[], page: number, pageSize: number): T[] {
     const start = (page - 1) * pageSize;
     return items.slice(start, start + pageSize);
+}
+
+/**
+ * Results (cached and fresh) carry the resume's storage path. Mint a fresh
+ * signed URL only at the response boundary so a 1-hour link never outlives
+ * itself inside the 24-hour search cache.
+ */
+async function withSignedResumeUrls(result: SearchResult): Promise<SearchResult> {
+    const paths = result.data
+        .map((c) => c.resumeUrl)
+        .filter((p): p is string => Boolean(p));
+    if (paths.length === 0) return result;
+
+    const unique = Array.from(new Set(paths));
+    const signed = new Map(
+        await Promise.all(
+            unique.map(async (path) => [path, await createResumeSignedUrl(path)] as const)
+        )
+    );
+
+    return {
+        ...result,
+        data: result.data.map((c) => ({
+            ...c,
+            resumeUrl: c.resumeUrl ? (signed.get(c.resumeUrl) ?? undefined) : undefined,
+            profilePreview: c.profilePreview
+                ? {
+                    ...c.profilePreview,
+                    resumeUrl: c.profilePreview.resumeUrl
+                        ? (signed.get(c.profilePreview.resumeUrl) ?? "")
+                        : "",
+                }
+                : c.profilePreview,
+        })),
+    };
 }
 
 function dedupeIds(ids: string[]): string[] {
@@ -104,11 +140,11 @@ export async function searchCandidatesHybrid(
             if (cached) {
                 console.debug("L1 cache hit");
                 await safeRecordGraphMetrics(graphMetricDefaults());
-                return {
+                return withSignedResumeUrls({
                     data: cached.candidates,
                     total: cached.total,
                     graphTelemetry: graphMetricDefaults(),
-                };
+                });
             }
         } catch (err) {
             console.error("Cache Read Error", err);
@@ -197,17 +233,17 @@ export async function searchCandidatesHybrid(
                 }
 
                 await safeRecordGraphMetrics(graphMetrics);
-                return pageResult;
+                return withSignedResumeUrls(pageResult);
             }
         }
 
         if (!query) {
             await safeRecordGraphMetrics(graphMetricDefaults());
             const browse = await getBrowseResults(page, pageSize, filters);
-            return {
+            return withSignedResumeUrls({
                 ...browse,
                 graphTelemetry: graphMetricDefaults(),
-            };
+            });
         }
 
     } catch (e) {
@@ -230,11 +266,11 @@ export async function searchCandidatesHybrid(
         if (semanticCached) {
             console.debug("L2 semantic cache hit");
             await safeRecordGraphMetrics(graphMetrics);
-            return {
+            return withSignedResumeUrls({
                 data: semanticCached.candidates,
                 total: semanticCached.total,
                 graphTelemetry: graphMetrics,
-            };
+            });
         }
 
         const runSearch = async (threshold: number, forceVectorOnly = false) => {
@@ -325,7 +361,7 @@ export async function searchCandidatesHybrid(
         graphMetrics.blendVariant = finalResult.data[0]?.blendVariant;
         await safeRecordGraphMetrics(graphMetrics);
 
-        return finalResult;
+        return withSignedResumeUrls(finalResult);
 
     } catch (error) {
         console.error("Vector Search Failed", error);
@@ -481,6 +517,7 @@ async function hydrateCandidates(
         matchScore: matchScores[r.id],
         aiReasoning: undefined,
         verificationStatus: r.verificationStatus,
+        // Storage path; converted to a signed URL at the response boundary.
         resumeUrl: r.resumeUrl,
         profilePreview: {
             id: r.id,

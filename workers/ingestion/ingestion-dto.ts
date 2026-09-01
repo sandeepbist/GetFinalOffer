@@ -10,7 +10,8 @@ export const EvidenceTypeEnum = z.enum([
 
 export const IngestionJobPayloadSchema = z.object({
     userId: z.string().cuid2(),
-    resumeUrl: z.string().url(),
+    // Either a bare Supabase storage path (current) or a legacy public URL.
+    resumeUrl: z.string().min(1),
     bio: z.string().optional(),
 });
 export type IngestionJobPayload = z.infer<typeof IngestionJobPayloadSchema>;

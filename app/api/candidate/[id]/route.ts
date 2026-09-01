@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import db from "@/db";
 import {
   gfoCandidatesTable,
   gfoCandidateSkillsTable, gfoSkillsLibraryTable,
   gfoCandidateInterviewProgressTable,
+  gfoCandidateHiddenOrganisationsTable,
+  gfoRecruitersTable,
   gfoUserTable,
 } from "@/db/schemas";
 import type {
@@ -13,13 +15,15 @@ import type {
 } from "@/features/candidate/candidate-dto";
 import { VerificationStatus } from "@/features/candidate/dashboard/components/VerifyCallout";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { createResumeSignedUrl } from "@/lib/resume-storage";
 
 export async function GET(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  let user;
   try {
-    const user = await getCurrentUser();
+    user = await getCurrentUser();
     if (user.role !== "recruiter") {
       return NextResponse.json(
         { error: "Recruiter access required" },
@@ -31,6 +35,32 @@ export async function GET(
   }
 
   const { id: userId } = await context.params;
+
+  // Honour the candidate's stealth settings: if they hid the requesting
+  // recruiter's organisation, this profile must look exactly like any other
+  // candidate they cannot see — a 404, not a 403 that confirms existence.
+  const [recruiter] = await db
+    .select({ organisationId: gfoRecruitersTable.organisationId })
+    .from(gfoRecruitersTable)
+    .where(eq(gfoRecruitersTable.userId, user.id));
+
+  if (recruiter) {
+    const [hidden] = await db
+      .select({ id: gfoCandidateHiddenOrganisationsTable.id })
+      .from(gfoCandidateHiddenOrganisationsTable)
+      .where(
+        and(
+          eq(gfoCandidateHiddenOrganisationsTable.candidateUserId, userId),
+          eq(
+            gfoCandidateHiddenOrganisationsTable.organisationId,
+            recruiter.organisationId
+          )
+        )
+      );
+    if (hidden) {
+      return NextResponse.json({ error: "Candidate not found" }, { status: 404 });
+    }
+  }
 
   const [cand] = await db
     .select({
@@ -91,7 +121,7 @@ export async function GET(
     yearsExperience: cand.yearsExperience,
     location: cand.location,
     bio: cand.bio ?? "",
-    resumeUrl: cand.resumeUrl,
+    resumeUrl: (await createResumeSignedUrl(cand.resumeUrl)) ?? cand.resumeUrl,
     verificationStatus: cand.verificationStatus as VerificationStatus,
     skillIds: skillRows.map((r) => r.skillId),
     skills: skillRows.map((r) => r.name),

@@ -21,6 +21,7 @@ import { queueProfileSync } from "@/lib/sync-buffer";
 import { queueGraphSync } from "@/lib/graph/sync";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { removeVerificationDocs } from "@/lib/verification-storage";
+import { createResumeSignedUrl } from "@/lib/resume-storage";
 import { ApiErrors, successResponse } from "@/features/common/api/response";
 import { validateFile } from "@/features/common/api/file-validation";
 import {
@@ -41,18 +42,15 @@ async function handleResumeUpload(userId: string, file: File, bio: string) {
 
   if (uploadError) throw new Error(`Storage Error: ${uploadError.message}`);
 
-  const { data: publicUrlData } = supabase.storage
-    .from("Resume")
-    .getPublicUrl(filename);
-  const resumeUrl = publicUrlData.publicUrl;
-
+  // Store the bare storage path; readable links are minted per request via
+  // createResumeSignedUrl so no long-lived public URL ever exists.
   await resumeQueue.add("process-resume", {
     userId,
-    resumeUrl: resumeUrl,
+    resumeUrl: filename,
     bio,
   });
 
-  return resumeUrl;
+  return filename;
 }
 
 export async function GET() {
@@ -104,7 +102,9 @@ export async function GET() {
     location: candidate.location,
     bio: candidate.bio ?? "",
     verificationStatus: candidate.verificationStatus as VerificationStatus,
-    resumeUrl: candidate.resumeUrl,
+    // The owner sees a short-lived readable link; the stored value is the
+    // private storage path, never a permanent public URL.
+    resumeUrl: (await createResumeSignedUrl(candidate.resumeUrl)) ?? candidate.resumeUrl,
     skillIds: skillRows.map((r) => r.skillId),
     skills: skillRows.map((r) => r.name),
     hiddenOrganisationIds: hiddenRows.map((r) => r.organisationId),

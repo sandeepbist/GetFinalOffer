@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import db from "@/db";
 import { gfoSkillsLibraryTable } from "@/db/schemas";
 import { sql } from "drizzle-orm";
+import { supabase } from "@/lib/supabase";
 import { extractTextFromPDF } from "@/lib/pdf";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { redis } from "@/lib/redis";
@@ -33,6 +34,21 @@ async function normalizeSkill(rawName: string): Promise<string> {
         .where(sql`LOWER(${gfoSkillsLibraryTable.name}) = LOWER(${normalized})`)
         .limit(1);
     return exact ? exact.name : normalized;
+}
+
+async function fetchResumeBuffer(resumeUrl: string): Promise<Buffer> {
+    if (resumeUrl.startsWith("http")) {
+        const response = await fetch(resumeUrl);
+        if (!response.ok) throw new Error(`Failed to fetch PDF (HTTP ${response.status})`);
+        return Buffer.from(await response.arrayBuffer());
+    }
+
+    // Bare storage path: read from the Resume bucket with the service role.
+    const { data, error } = await supabase.storage
+        .from("Resume")
+        .download(resumeUrl);
+    if (error || !data) throw new Error(`Failed to download resume: ${error?.message}`);
+    return Buffer.from(await data.arrayBuffer());
 }
 
 async function extractSkillsWithLLM(text: string): Promise<ExtractedSkill[]> {
@@ -95,9 +111,9 @@ export const extractorWorker = new Worker<IngestionJobPayload, ExtractorOutput>(
     async (job: Job<IngestionJobPayload>) => {
         const { userId, resumeUrl, bio } = job.data;
 
-        const response = await fetch(resumeUrl);
-        if (!response.ok) throw new Error(`Failed to fetch PDF`);
-        const buffer = Buffer.from(await response.arrayBuffer());
+        // resumeUrl is either a bare storage path (current format) or a
+        // legacy public URL; download the former from the private bucket.
+        const buffer = await fetchResumeBuffer(resumeUrl);
 
         let fullText = await extractTextFromPDF(buffer);
         fullText = `Bio: ${bio || ""}\n\n${fullText}`;

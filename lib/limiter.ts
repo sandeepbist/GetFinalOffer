@@ -19,3 +19,33 @@ export const uploadLimiter = new Ratelimit({
   analytics: true,
   prefix: "@upstash/ratelimit/upload",
 });
+
+export interface LimitResult {
+  success: boolean;
+  limit: number;
+  remaining: number;
+  reset: number;
+}
+
+const ALLOW_ALL: LimitResult = {
+  success: true,
+  limit: 0,
+  remaining: Number.MAX_SAFE_INTEGER,
+  reset: 0,
+};
+
+/**
+ * Rate-limit a request, failing open when the limiter backend is unavailable.
+ * A limiter outage must not take the endpoint down with it.
+ */
+export async function limitOrPassThrough(
+  limiter: Ratelimit,
+  identifier: string
+): Promise<LimitResult> {
+  try {
+    return await limiter.limit(identifier);
+  } catch (error) {
+    console.warn("Rate limiter unavailable, allowing request", error);
+    return ALLOW_ALL;
+  }
+}

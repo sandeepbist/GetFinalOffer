@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import db from "@/db";
 import { gfoRecruitersTable } from "@/db/schemas";
 import { eq } from "drizzle-orm";
-import { searchLimiter } from "@/lib/limiter";
+import { searchLimiter, limitOrPassThrough } from "@/lib/limiter";
 import { searchCandidatesHybrid } from "@/features/recruiter/candidates-data-access";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { ApiErrors, successResponse } from "@/features/common/api/response";
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     return ApiErrors.unauthorized();
   }
 
-  const { success, limit, reset, remaining } = await searchLimiter.limit(userId);
+  const { success, limit, reset, remaining } = await limitOrPassThrough(searchLimiter, userId);
   if (!success) {
     return ApiErrors.rateLimited(limit, remaining, reset);
   }

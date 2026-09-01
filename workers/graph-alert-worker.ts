@@ -51,7 +51,15 @@ export async function graphAlertProcessor(): Promise<void> {
   const newCandidates24h = await getMetricSum("graph_new_candidates_found", 24 * 60);
   const baselineFallbackPerMinute = await getFallbackBaselinePerMinute();
 
-  const fallbackThreshold = Math.max(100 * 5, baselineFallbackPerMinute * 5 * 5);
+  // Baseline is per-minute; scale it to the 5-minute window and require a 5x
+  // spike over that before paging, with a floor of 500 fallbacks per 5 minutes.
+  const WINDOW_MINUTES = 5;
+  const BASELINE_SPIKE_MULTIPLIER = 5;
+  const MIN_FALLBACKS_PER_WINDOW = 100 * WINDOW_MINUTES;
+  const fallbackThreshold = Math.max(
+    MIN_FALLBACKS_PER_WINDOW,
+    baselineFallbackPerMinute * WINDOW_MINUTES * BASELINE_SPIKE_MULTIPLIER
+  );
   if (
     fallback5m > fallbackThreshold &&
     await shouldSendDedupedAlert("fallback-spike", 5 * 60)

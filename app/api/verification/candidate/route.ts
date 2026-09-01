@@ -10,16 +10,12 @@ import {
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { ApiErrors, successResponse } from "@/features/common/api/response";
 import { validateFiles } from "@/features/common/api/file-validation";
-import { uploadLimiter } from "@/lib/limiter";
+import { uploadLimiter, limitOrPassThrough } from "@/lib/limiter";
 import {
   uploadVerificationDoc,
   removeVerificationDocs,
   type UploadedDocMeta,
 } from "@/lib/verification-storage";
-
-export const config = {
-  api: { bodyParser: false },
-};
 
 /**
  * Upload files sequentially, tracking successes so we can clean up on partial failure.
@@ -57,7 +53,7 @@ export async function POST(req: NextRequest) {
     return ApiErrors.unauthorized();
   }
 
-  const { success, limit, reset, remaining } = await uploadLimiter.limit(userId);
+  const { success, limit, reset, remaining } = await limitOrPassThrough(uploadLimiter, userId);
   if (!success) {
     return ApiErrors.rateLimited(limit, remaining, reset);
   }

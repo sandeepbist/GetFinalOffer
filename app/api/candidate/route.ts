@@ -24,8 +24,6 @@ import { removeVerificationDocs } from "@/lib/verification-storage";
 import { ApiErrors, successResponse } from "@/features/common/api/response";
 import { validateFile } from "@/features/common/api/file-validation";
 
-export const config = { api: { bodyParser: false } };
-
 async function handleResumeUpload(userId: string, file: File, bio: string) {
   const filename = `${userId}-${Date.now()}-${file.name.replace(
     /[^a-zA-Z0-9.-]/g,

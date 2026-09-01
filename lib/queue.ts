@@ -55,7 +55,8 @@ export const createWorker = (name: string, processor: Processor, concurrency = 1
     connection,
     concurrency,
     lockDuration: 5 * 60 * 1000,
-    drainDelay: getWorkerDrainDelaySeconds(),
+    // BullMQ expects drainDelay in milliseconds; the config is expressed in seconds.
+    drainDelay: getWorkerDrainDelaySeconds() * 1000,
     skipStalledCheck: true,
     maxStalledCount: 0,
   });

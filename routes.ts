@@ -1,6 +1,3 @@
-// an array of public routes that do not require authentication
-export const publicRoutes = ["api/webhooks/stripe"];
-
 /**
  * Array of routes that are used for authentication
  */
@@ -21,4 +18,4 @@ export const DEFAULT_LOGIN_REDIRECT = "/dashboard";
  * Protected routes that require authentication
  * The middleware will check these routes and redirect to login if not authenticated
  */
-export const protectedRoutes = ["/dashboard", "/recruiter"];
+export const protectedRoutes = ["/dashboard", "/recruiter", "/admin"];

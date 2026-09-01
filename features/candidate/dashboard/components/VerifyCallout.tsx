@@ -284,7 +284,19 @@ function VerificationDialogContent({
   onFileChange,
   loading,
   onSubmit,
-}: any) {
+}: {
+  title: React.ReactNode;
+  subject: string;
+  setSubject: (value: string) => void;
+  notes: string;
+  setNotes: (value: string) => void;
+  links: string;
+  setLinks: (value: string) => void;
+  files: File[];
+  onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  loading: boolean;
+  onSubmit: () => void;
+}) {
   return (
     <DialogContent className="sm:max-w-lg">
       <DialogHeader>

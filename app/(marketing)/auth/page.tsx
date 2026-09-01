@@ -48,7 +48,7 @@ export default function AuthPage() {
           <p className="text-text-muted text-sm">
             {mode === "login"
               ? "Enter your credentials to access your account"
-              : "Join thousands of professionals finding their dream jobs"}
+              : "Create your account to get started"}
           </p>
         </motion.div>
 

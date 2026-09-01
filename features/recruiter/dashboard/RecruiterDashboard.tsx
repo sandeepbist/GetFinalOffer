@@ -77,7 +77,7 @@ function DashboardSkeleton() {
 }
 
 export default function RecruiterDashboard({ user }: { user: TUserAuth }) {
-  const { data: contacts, loading } = useCachedFetch<RecruiterContactDTO[]>(
+  const { data: contacts, loading, error, refresh } = useCachedFetch<RecruiterContactDTO[]>(
     "recruiter-contacts",
     getRecruiterContacts
   );
@@ -88,6 +88,10 @@ export default function RecruiterDashboard({ user }: { user: TUserAuth }) {
   );
   const pendingCount = useMemo(
     () => (contacts ?? []).filter((c) => c.status === "pending").length,
+    [contacts]
+  );
+  const rejectedCount = useMemo(
+    () => (contacts ?? []).filter((c) => c.status === "rejected").length,
     [contacts]
   );
 
@@ -115,6 +119,22 @@ export default function RecruiterDashboard({ user }: { user: TUserAuth }) {
   };
 
   if (loading && !contacts) return <DashboardSkeleton />;
+
+  if (error && !contacts) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-section px-6">
+        <Card className="max-w-md border-border/80 bg-surface">
+          <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+            <p className="text-sm font-medium text-heading">Could not load your outreach</p>
+            <p className="text-xs text-text-muted">
+              The dashboard data failed to load. Check your connection and try again.
+            </p>
+            <Button onClick={refresh} className="mt-2">Retry</Button>
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
 
   const contactList = contacts ?? [];
 
@@ -147,7 +167,7 @@ export default function RecruiterDashboard({ user }: { user: TUserAuth }) {
                   { label: "Outreach", value: contactList.length },
                   { label: "Accepted", value: acceptedCount },
                   { label: "Pending", value: pendingCount },
-                  { label: "Pipeline", value: contactList.length === 0 ? "New" : "Active" },
+                  { label: "Declined", value: rejectedCount },
                 ].map((m, i) => (
                   <motion.div
                     key={m.label}

@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     template: "%s | GetFinalOffer",
   },
   description:
-    "Verify your interview history once. Top tech companies skip technical rounds and compete with direct salary offers. Join 10,000+ engineers who landed their dream jobs.",
+    "Verify your interview history once. Partner companies see validated outcomes and reach out with direct offers — no repeated technical screens.",
   keywords: [
     "job offers",
     "tech hiring",

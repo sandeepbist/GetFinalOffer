@@ -225,7 +225,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
       dateCleared: e.dateCleared,
     }));
 
-  const handleSaveProgress = async (updated: InterviewProgress[]) => {
+  const handleSaveProgress = async (updated: InterviewProgress[]): Promise<boolean> => {
     const dto: InterviewProgressEntryDTO[] = updated.map((e) => ({
       id: e.id,
       companyId: e.companyId,
@@ -236,9 +236,14 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
       verificationStatus: e.verificationStatus as VerificationStatus,
       dateCleared: e.dateCleared,
     }));
-    await saveInterviewProgress(dto);
+    const ok = await saveInterviewProgress(dto);
+    if (!ok) {
+      toast.error("Failed to save interview progress");
+      return false;
+    }
     setProfile(await getCandidateProfile());
     toast.success("Interview progress saved");
+    return true;
   };
 
   const handleUpload = async (file: File) => {

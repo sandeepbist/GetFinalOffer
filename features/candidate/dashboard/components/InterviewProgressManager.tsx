@@ -17,7 +17,7 @@ interface InterviewProgressManagerProps {
   interviewProgress: InterviewProgress[];
   availableCompanies: { id: string; name: string }[];
   isLocked?: boolean;
-  onSave: (entries: InterviewProgress[]) => Promise<void>;
+  onSave: (entries: InterviewProgress[]) => Promise<boolean>;
 }
 const uuid = () => crypto.randomUUID();
 
@@ -26,6 +26,7 @@ export const InterviewProgressManager: React.FC<
 > = ({ interviewProgress, availableCompanies, isLocked = false, onSave }) => {
   const [open, setOpen] = useState(false);
   const [edited, setEdited] = useState<InterviewProgress[]>([]);
+  const [saving, setSaving] = useState(false);
 
   const openEditor = () => {
     if (isLocked) return;
@@ -34,8 +35,12 @@ export const InterviewProgressManager: React.FC<
   };
 
   const save = async () => {
-    await onSave(edited);
-    setOpen(false);
+    setSaving(true);
+    // Keep the editor open when the save fails so the user does not lose
+    // their edits behind a closed dialog.
+    const ok = await onSave(edited).catch(() => false);
+    setSaving(false);
+    if (ok) setOpen(false);
   };
 
   return (
@@ -181,8 +186,8 @@ export const InterviewProgressManager: React.FC<
             <Button variant="ghost" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={save}>
-              Save Changes
+            <Button onClick={save} disabled={saving}>
+              {saving ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </DialogContent>

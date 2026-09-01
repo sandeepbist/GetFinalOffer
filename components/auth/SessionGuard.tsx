@@ -14,9 +14,9 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
         }
     }, [session, isPending, router]);
 
-    if (isPending) return <>{children}</>;
-
-    if (!session) return null;
+    // Render nothing until the session resolves: protected content must not
+    // flash for logged-out visitors while the check is in flight.
+    if (isPending || !session) return null;
 
     return <>{children}</>;
 }

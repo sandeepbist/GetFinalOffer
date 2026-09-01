@@ -152,7 +152,7 @@ export const HeroIllustration = () => {
                                 transition={{ delay: 1.2, type: "spring" }}
                             />
                             <div className="text-sm font-bold text-heading">Level Verified (L5)</div>
-                            <div className="text-xs text-text-muted mt-0.5">Source: Stripe Inc. (DKIM Signed)</div>
+                            <div className="text-xs text-text-muted mt-0.5">Source: Stripe Inc. (Document Verified)</div>
                         </motion.div>
 
                         <motion.div
@@ -611,7 +611,7 @@ export const VerificationIllustration = () => {
         <div
             ref={ref}
             role="img"
-            aria-label="Animated illustration showing employment verification with DKIM 2048-bit RSA signature validation and source verification from Stripe Inc."
+            aria-label="Animated illustration showing employment verification: an offer document is reviewed and confirmed against the source company."
             className="w-full h-full bg-section-alt relative overflow-hidden flex items-center justify-center p-6"
         >
             <BlueprintGrid />
@@ -640,8 +640,8 @@ export const VerificationIllustration = () => {
                                 <Binary className="w-6 h-6 text-white" aria-hidden="true" />
                             </div>
                             <div className="flex-1">
-                                <div className="text-xs text-text-muted mb-1">DKIM Signature</div>
-                                <div className="font-mono text-xs text-heading truncate">2048-bit RSA verified</div>
+                                <div className="text-xs text-text-muted mb-1">Offer Letter</div>
+                                <div className="font-mono text-xs text-heading truncate">Document on file</div>
                             </div>
                             <motion.div
                                 initial={{ scale: 0 }}

@@ -20,6 +20,7 @@ export function useCachedFetch<T>(
 
     const [data, setData] = useState<T | null>(existing?.data ?? null);
     const [loading, setLoading] = useState(!existing);
+    const [error, setError] = useState<Error | null>(null);
     const fetcherRef = useRef(fetcher);
     fetcherRef.current = fetcher;
 
@@ -30,6 +31,11 @@ export function useCachedFetch<T>(
                 const result = await fetcherRef.current();
                 store.set(key, { data: result, timestamp: Date.now() });
                 setData(result);
+                setError(null);
+            } catch (err) {
+                // Surface the failure instead of leaving stale/null data
+                // indistinguishable from a genuine empty state.
+                setError(err instanceof Error ? err : new Error(String(err)));
             } finally {
                 if (!background) setLoading(false);
             }
@@ -49,11 +55,10 @@ export function useCachedFetch<T>(
             }
             return;
         }
-
         refresh(false);
     }, [key, staleMs, refresh]);
 
-    return { data, loading, refresh: () => refresh(false) };
+    return { data, loading, error, refresh: () => refresh(false) };
 }
 
 export function invalidateCache(key: string) {

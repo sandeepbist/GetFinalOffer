@@ -65,20 +65,20 @@ const pillars: Omit<PillarProps, "delay">[] = [
     {
         icon: ShieldCheck,
         badge: "Verified",
-        title: "Cryptographic Proof",
-        description: "DKIM-signed validation guarantees real interview performance and genuine offer history.",
+        title: "Document-Backed Proof",
+        description: "Human-reviewed verification of your interview history and offer claims, backed by documents you control.",
     },
     {
         icon: Zap,
         badge: "Fast-Track",
         title: "Reverse Recruiting",
-        description: "Pre-verified competency lets you bypass repetitive technical screenings straight to final offers.",
+        description: "Verified interview progress signals partner companies, so recruiters reach out to you instead of starting at round one.",
     },
     {
         icon: EyeOff,
         badge: "Private",
-        title: "Blind Stealth Mode",
-        description: "Automatic current-employer blocking keeps your identity hidden until you choose to connect.",
+        title: "Stealth Visibility",
+        description: "Block any partner organisation, including your current employer, from ever seeing your profile in search.",
     },
 ];
 

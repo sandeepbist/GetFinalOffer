@@ -17,15 +17,15 @@ export function Features() {
                 <SectionHeader
                     badge="Core Features"
                     title="Infrastructure for your career."
-                    subtitle="We built the first protocol that allows you to cryptographically verify and transport your professional reputation."
+                    subtitle="Verify your interview history once with documents you control, then let verified outcomes do the talking."
                 />
 
                 <div className="space-y-0">
                     <FeatureShowcase
                         icon={Shield}
-                        badge="DKIM 2048-bit"
-                        title="Cryptographic Verification"
-                        description="We validate your employment and interview history using DKIM signatures and direct-source data. Once verified, your level becomes a portable, cryptographically-secured asset."
+                        badge="Human-Reviewed"
+                        title="Document Verification"
+                        description="Upload offer letters or employment confirmation and our review team verifies each claim. Verified interview progress becomes a trust signal recruiters can rely on."
                         illustration={<VerificationIllustration />}
                     />
 
@@ -40,9 +40,9 @@ export function Features() {
 
                     <FeatureShowcase
                         icon={Zap}
-                        badge="Instant"
-                        title="Skip Technical Rounds"
-                        description="Don't prove you can code twice. If you passed the bar at a top-tier tech company, our partners accept that as proof of skill and skip straight to offers."
+                        badge="Direct"
+                        title="Skip Repeated Screens"
+                        description="When verified interview progress shows you already cleared the bar at a partner company, recruiters start the conversation further along the process."
                         illustration={<SpeedIllustration />}
                     />
 

@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Briefcase, CalendarDays, Mail, MapPin, ShieldCheck, Sparkles } from "lucide-react";
 import { sendInvite } from "@/features/contacts/contact-use-cases";
 import { trackProfileView } from "@/features/analytics/analytics-use-cases";
+import { invalidateCache } from "@/hooks/use-cached-fetch";
 import { useSession } from "@/lib/auth/auth-client";
 import type { CandidateSummaryDTO } from "@/features/recruiter/candidates-dto";
 
@@ -84,6 +85,9 @@ export function CandidateProfileModal({ candidate, open, onClose }: Props) {
     }
 
     toast.success("Invite sent");
+    // The recruiter dashboard reads contacts from a 30s cache; a fresh invite
+    // must be visible there immediately.
+    invalidateCache("recruiter-contacts");
     onClose();
   };
 

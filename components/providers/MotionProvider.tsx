@@ -9,7 +9,7 @@ interface MotionProviderProps {
 export function MotionProvider({ children }: MotionProviderProps) {
   return (
     <LazyMotion features={domAnimation}>
-      <MotionConfig reducedMotion="never">{children}</MotionConfig>
+      <MotionConfig reducedMotion="user">{children}</MotionConfig>
     </LazyMotion>
   );
 }

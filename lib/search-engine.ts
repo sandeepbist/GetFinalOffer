@@ -74,9 +74,9 @@ export class SearchEngine {
         if (!query || query.trim() === "") {
             candidateIds = await redis.zrevrange(SEARCH_POOL_KEY, 0, MAX_SEARCH_POOL_SIZE - 1);
         } else {
-            const normalizedSkill = query.toLowerCase().trim().replace(/\s+/g, "-");
-            const skillKey = `idx:skill:${normalizedSkill}`;
-
+            // Same slugger the ingestion path writes with: "Node.js" and
+            // "C++" index under nodejs/cpp, not their raw forms.
+            const skillKey = `idx:skill:${toGraphSkillKey(query)}`;
             candidateIds = await redis.smembers(skillKey);
         }
 

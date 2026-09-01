@@ -20,8 +20,10 @@ import {
   Search,
   LayoutDashboard,
   LogOut,
+  ShieldCheck,
 } from "lucide-react";
 import { useTheme } from "@/components/providers";
+import { isAdminEmail } from "@/lib/auth/admin-client";
 
 export function Header() {
   const { data: session, isPending } = authClient.useSession();
@@ -46,7 +48,10 @@ export function Header() {
   const handleSignOut = async () => {
     setIsSigningOut(true);
     try {
-      await signOut();
+      // signOut resolves with { error } instead of throwing, so also bound
+      // the wait: a stalled request must not trap the user on this page.
+      const timeout = new Promise((resolve) => setTimeout(resolve, 4000));
+      await Promise.race([signOut(), timeout]);
     } catch (err) {
       console.warn("SignOut error:", err);
     } finally {
@@ -60,10 +65,12 @@ export function Header() {
 
   const user = session?.user;
   const userRole = (user as { role?: string })?.role;
+  const userEmail = (user as { email?: string } | undefined)?.email ?? "";
   const isLoggedIn = !!user && !isSigningOut;
+  const isAdmin = isLoggedIn && isAdminEmail(userEmail);
 
   const landingLinks = [
-    { href: "/#how-it-works", label: "How it Works" },
+    { href: "/#how-it-works", label: "How It Works" },
     { href: "/#features", label: "Features" },
   ];
 
@@ -76,10 +83,16 @@ export function Header() {
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   ];
 
+  const adminLinks = [
+    { href: "/admin/verification", label: "Verification Review", icon: ShieldCheck },
+  ];
+
   const activeNavLinks = isLoggedIn
-    ? userRole === "recruiter"
-      ? recruiterLinks
-      : candidateLinks
+    ? isAdmin
+      ? [...(userRole === "recruiter" ? recruiterLinks : candidateLinks), ...adminLinks]
+      : userRole === "recruiter"
+        ? recruiterLinks
+        : candidateLinks
     : landingLinks;
 
   return (

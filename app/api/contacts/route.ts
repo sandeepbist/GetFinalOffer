@@ -5,8 +5,12 @@ import { getCurrentSession } from "@/lib/auth/current-user";
 import {
   gfoContactsTable,
   gfoContactDetailsTable,
+  gfoRecruitersTable,
 } from "@/features/recruiter/recruiter-schemas";
-import { gfoCandidatesTable } from "@/features/candidate/candidate-schemas";
+import {
+  gfoCandidatesTable,
+  gfoCandidateHiddenOrganisationsTable,
+} from "@/features/candidate/candidate-schemas";
 
 export async function POST(req: NextRequest) {
   const session = await getCurrentSession();
@@ -34,6 +38,32 @@ export async function POST(req: NextRequest) {
 
   if (!candidate) {
     return NextResponse.json({ success: false, error: "Candidate not found" }, { status: 404 });
+  }
+
+  // Stealth setting enforcement: a candidate who hid the recruiter's
+  // organisation must be unreachable here too, not just in search. Return
+  // the same 404 so the API cannot be used to confirm they exist.
+  const [recruiter] = await db
+    .select({ organisationId: gfoRecruitersTable.organisationId })
+    .from(gfoRecruitersTable)
+    .where(eq(gfoRecruitersTable.userId, session.user.id));
+
+  if (recruiter) {
+    const [hidden] = await db
+      .select({ id: gfoCandidateHiddenOrganisationsTable.id })
+      .from(gfoCandidateHiddenOrganisationsTable)
+      .where(
+        and(
+          eq(gfoCandidateHiddenOrganisationsTable.candidateUserId, candidateUserId),
+          eq(
+            gfoCandidateHiddenOrganisationsTable.organisationId,
+            recruiter.organisationId
+          )
+        )
+      );
+    if (hidden) {
+      return NextResponse.json({ success: false, error: "Candidate not found" }, { status: 404 });
+    }
   }
 
   const [existing] = await db

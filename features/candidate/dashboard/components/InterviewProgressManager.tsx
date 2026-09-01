@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -131,6 +132,7 @@ export const InterviewProgressManager: React.FC<
                         files: files,
                         interviewProgressId: String(e.id),
                       });
+                      toast.success("Verification submitted for review");
                     }}
                   />
                 </motion.div>

@@ -68,30 +68,41 @@ export async function processAnalyticsBatch(
           createdAt: new Date(event.timestamp),
         },
       });
-    } catch (e) {
+    } catch {
       corruptEvents.push(serialized);
     }
   }
 
   if (corruptEvents.length > 0) {
-    console.warn(`⚠️ Found ${corruptEvents.length} corrupt JSON events. Sending to DLQ.`);
+    console.warn(`[Analytics] Found ${corruptEvents.length} corrupt JSON events. Sending to DLQ.`);
     await pushToDLQ(corruptEvents, "JSON Parse Error");
   }
 
   if (validBatchItems.length === 0) return 0;
 
-  const insertValues = validBatchItems.map((i) => i.data);
-
   try {
-    await db.insert(gfoSearchLogsTable).values(insertValues);
-    return insertValues.length;
-  } catch (error: any) {
-    console.error(`❌ DB Batch Failed (Size: ${insertValues.length}). Sending entire batch to DLQ.`);
-    console.error(`Reason: ${error.message}`);
+    await db.insert(gfoSearchLogsTable).values(validBatchItems.map((i) => i.data));
+    return validBatchItems.length;
+  } catch (error: unknown) {
+    console.error(
+      `DB batch insert failed (size: ${validBatchItems.length}), retrying rows individually:`,
+      error instanceof Error ? error.message : String(error)
+    );
 
-    const failedRawEvents = validBatchItems.map((i) => i.raw);
-    await pushToDLQ(failedRawEvents, `DB Insert Failed: ${error.message}`);
+    // A batch insert fails atomically, so one poisoned row would sink the
+    // whole batch. Retry row-by-row: good rows land in Postgres, only the
+    // failing rows go to the DLQ.
+    let inserted = 0;
+    for (const item of validBatchItems) {
+      try {
+        await db.insert(gfoSearchLogsTable).values(item.data);
+        inserted++;
+      } catch (rowError: unknown) {
+        const rowReason = rowError instanceof Error ? rowError.message : String(rowError);
+        await pushToDLQ([item.raw], `DB Insert Failed: ${rowReason}`);
+      }
+    }
 
-    return 0;
+    return inserted;
   }
 }

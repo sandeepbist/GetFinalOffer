@@ -57,6 +57,13 @@
       "when": 1774813810309,
       "tag": "20260329195010_slimy_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788288554767,
+      "tag": "20260901184914_crazy_dagger",
+      "breakpoints": true
     }
   ]
 }

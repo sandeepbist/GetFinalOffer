@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { VerificationReviewDashboard } from "@/features/admin/VerificationReviewDashboard";
+import { VerificationReviewDashboard } from "@/features/admin/dashboard/VerificationReviewDashboard";
 
 export const metadata: Metadata = {
-  title: "Verification Review",
+  title: "Admin Verifications",
   robots: { index: false, follow: false },
 };
 

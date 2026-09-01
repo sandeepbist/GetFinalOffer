@@ -8,6 +8,7 @@ import {
   gfoCandidateInterviewProgressTable,
   gfoVerificationRequestsTable,
   gfoVerificationDocumentsTable,
+  gfoAdminDecisionsTable,
 } from "@/db/schemas";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { isAdminEmail } from "@/lib/auth/admin";
@@ -141,6 +142,19 @@ export async function POST(req: NextRequest) {
           updatedAt: new Date(),
         })
         .where(eq(gfoVerificationRequestsTable.id, requestId));
+
+      // Append-only audit row: actor, action, before/after, in the same
+      // transaction as the decision itself.
+      await tx.insert(gfoAdminDecisionsTable).values({
+        actorUserId: user.id,
+        actorEmail: user.email,
+        action: `verification_${decision}`,
+        targetType: "verification_request",
+        targetId: requestId,
+        beforeStatus: "pending",
+        afterStatus: decision,
+        note: decisionNote || null,
+      });
 
       if (decision !== "approved") {
         // A rejection marks the target unverified; the requester sees the

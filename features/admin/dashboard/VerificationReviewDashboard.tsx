@@ -26,7 +26,7 @@ import {
   getVerificationReviewQueue,
   submitVerificationDecision,
   type VerificationReviewRequestDTO,
-} from "@/features/admin/verification-review-use-cases";
+} from "@/features/admin/admin-use-cases";
 
 function ScopeBadge({ scope }: { scope: string }) {
   if (scope === "candidate_profile") {
@@ -41,6 +41,13 @@ function ScopeBadge({ scope }: { scope: string }) {
       <FileText className="mr-1 h-3 w-3" /> Interview
     </Badge>
   );
+}
+
+function formatWaitTime(requestedAt: string): string {
+  const hours = (Date.now() - new Date(requestedAt).getTime()) / (1000 * 60 * 60);
+  if (hours < 1) return "under an hour";
+  if (hours < 24) return `${Math.floor(hours)}h`;
+  return `${Math.floor(hours / 24)}d`;
 }
 
 export function VerificationReviewDashboard() {
@@ -109,10 +116,10 @@ export function VerificationReviewDashboard() {
   const reviewed = requests.filter((r) => r.status !== "pending");
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8 p-6">
+    <div className="space-y-8">
       <header className="space-y-2">
         <h1 className="text-2xl font-bold tracking-tight text-heading">
-          Verification review
+          Verifications
         </h1>
         <p className="text-sm text-text-muted">
           {pending.length} pending request{pending.length === 1 ? "" : "s"}.
@@ -144,7 +151,8 @@ export function VerificationReviewDashboard() {
                 </CardTitle>
                 <p className="text-xs text-text-muted">
                   {request.requesterEmail} ·{" "}
-                  {new Date(request.requestedAt).toLocaleString()}
+                  {new Date(request.requestedAt).toLocaleString()} · waiting{" "}
+                  {formatWaitTime(request.requestedAt)}
                 </p>
               </div>
               <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/25">
@@ -217,6 +225,9 @@ export function VerificationReviewDashboard() {
                     <p className="truncate text-sm font-medium text-heading">
                       {request.requesterName ?? "Unknown"} — {request.subject || request.scope}
                     </p>
+                    {request.notes && (
+                      <p className="truncate text-xs text-text-subtle">{request.notes}</p>
+                    )}
                     {request.documents.length > 0 && (
                       <p className="text-xs text-text-subtle">
                         {request.documents.length} document

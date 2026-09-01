@@ -1,4 +1,4 @@
-﻿import "dotenv/config";
+import "dotenv/config";
 
 import {
   vectorizerQueue,
@@ -13,15 +13,17 @@ import { graphSyncWorker } from "./graph-sync-worker";
 import { flushGraphMetricsProcessor } from "./graph-metrics-flush-worker";
 import { graphAlertProcessor } from "./graph-alert-worker";
 import { rankGraphProposalsProcessor } from "./graph-proposal-ranker";
-import { runAnalyticsWorker } from "./analytics-worker";
+import { runAnalyticsWorker, stopAnalyticsWorker } from "./analytics-worker";
 import { getWorkerDrainDelaySeconds } from "@/lib/worker-config";
+
 const SYNC_INTERVAL_MS = 10 * 60 * 1000;
 const GRAPH_METRIC_FLUSH_INTERVAL_MS = 60 * 1000;
 const GRAPH_ALERT_INTERVAL_MS = 5 * 60 * 1000;
 const GRAPH_PROPOSAL_RANK_INTERVAL_MS = 60 * 60 * 1000;
+const SHUTDOWN_TIMEOUT_MS = 30 * 1000;
 
 console.log(`[WorkerConfig] drainDelaySeconds=${getWorkerDrainDelaySeconds()}`);
-console.log("ðŸš€ Starting Agentic Pipeline...");
+console.log("[Workers] Starting ingestion, graph, and analytics pipelines...");
 
 extractorWorker.on("completed", async (job, result) => {
   if (result) {
@@ -42,20 +44,18 @@ vectorizerWorker.on("failed", (job, err) => console.error(`[Vectorizer] Failed $
 broadcasterWorker.on("failed", (job, err) => console.error(`[Broadcaster] Failed ${job?.id}`, err));
 graphSyncWorker.on("failed", (job, err) => console.error(`[GraphSync] Failed ${job?.id}`, err));
 graphSyncWorker.on("completed", (job, result) => {
-    if (result) {
-        console.log(`[GraphSync] âœ… Synced candidate graph for ${result.userId}`);
-    }
+  if (result) {
+    console.log(`[GraphSync] Synced candidate graph for ${result.userId}`);
+  }
 });
 
 runAnalyticsWorker().catch((err: unknown) => {
-  console.error("ðŸ”¥ Analytics Worker Critical Failure:", err);
+  console.error("[Analytics] Worker critical failure:", err);
 });
-
 
 async function runBatchSync() {
   try {
     const result = await profileSyncProcessor();
-
     if (result && result.processed > 0) {
       console.log(`[Interval] Sync run complete. Processed: ${result.processed}`);
     }
@@ -64,118 +64,74 @@ async function runBatchSync() {
   }
 }
 
-runBatchSync();
-setInterval(runBatchSync, SYNC_INTERVAL_MS);
-
 async function runGraphMetricFlush() {
-    try {
-        const result = await flushGraphMetricsProcessor();
-        if (result.rowsInserted > 0) {
-            console.log(`[GraphMetrics] Flushed ${result.rowsInserted} rows across ${result.flushedBuckets} buckets`);
-        }
-    } catch (err) {
-        console.error("[GraphMetrics] Flush run failed:", err);
+  try {
+    const result = await flushGraphMetricsProcessor();
+    if (result.rowsInserted > 0) {
+      console.log(`[GraphMetrics] Flushed ${result.rowsInserted} rows across ${result.flushedBuckets} buckets`);
     }
+  } catch (err) {
+    console.error("[GraphMetrics] Flush run failed:", err);
+  }
 }
 
 async function runGraphAlerts() {
-    try {
-        await graphAlertProcessor();
-    } catch (err) {
-        console.error("[GraphAlerts] Alert run failed:", err);
-    }
+  try {
+    await graphAlertProcessor();
+  } catch (err) {
+    console.error("[GraphAlerts] Alert run failed:", err);
+  }
 }
-
-runGraphMetricFlush();
-runGraphAlerts();
-setInterval(runGraphMetricFlush, GRAPH_METRIC_FLUSH_INTERVAL_MS);
-setInterval(runGraphAlerts, GRAPH_ALERT_INTERVAL_MS);
 
 async function runGraphProposalRanking() {
-    try {
-        const result = await rankGraphProposalsProcessor();
-        if (result.processed > 0) {
-            console.log(`[GraphProposals] Ranked ${result.processed} pending proposals`);
-        }
-    } catch (err) {
-        console.error("[GraphProposals] Ranker run failed:", err);
+  try {
+    const result = await rankGraphProposalsProcessor();
+    if (result.processed > 0) {
+      console.log(`[GraphProposals] Ranked ${result.processed} pending proposals`);
     }
+  } catch (err) {
+    console.error("[GraphProposals] Ranker run failed:", err);
+  }
 }
 
+runBatchSync();
+runGraphMetricFlush();
+runGraphAlerts();
 runGraphProposalRanking();
-setInterval(runGraphProposalRanking, GRAPH_PROPOSAL_RANK_INTERVAL_MS);
 
-console.log("âœ… All Systems Operational: Pipeline + Sync Interval");
+const timers: NodeJS.Timeout[] = [
+  setInterval(runBatchSync, SYNC_INTERVAL_MS),
+  setInterval(runGraphMetricFlush, GRAPH_METRIC_FLUSH_INTERVAL_MS),
+  setInterval(runGraphAlerts, GRAPH_ALERT_INTERVAL_MS),
+  setInterval(runGraphProposalRanking, GRAPH_PROPOSAL_RANK_INTERVAL_MS),
+];
 
+console.log("[Workers] All systems operational: pipeline + sync intervals");
 
-// Apply when in High level Prod
-// import "dotenv/config";
+let shuttingDown = false;
 
-// import {
-//     createWorker,
-//     PROFILE_SYNC_QUEUE_NAME,
-//     vectorizerQueue,
-//     broadcasterQueue,
-//     profileSyncQueue
-// } from "@/lib/queue";
+async function shutdown(signal: string) {
+  if (shuttingDown) return;
+  shuttingDown = true;
 
-// import { extractorWorker } from "./ingestion/extractor";
-// import { vectorizerWorker } from "./ingestion/vectorizer";
-// import { broadcasterWorker } from "./ingestion/Broadcaster";
-// import { profileSyncProcessor } from "./profile-sync-worker";
+  console.log(`[Workers] ${signal} received, draining...`);
+  for (const timer of timers) clearInterval(timer);
 
-// console.log("ðŸš€ Starting Agentic Pipeline...");
+  await stopAnalyticsWorker();
 
-// extractorWorker.on("completed", async (job, result) => {
-//     if (result) {
-//         console.log(`[Flow] Extractor finished ${job.id}. Queueing Vectorizer...`);
-//         await vectorizerQueue.add("vectorize", result);
-//     }
-// });
+  // Closing a BullMQ worker waits for the active job to finish; the hard
+  // timeout below bounds the wait so a stuck job cannot block the exit.
+  const workers = [extractorWorker, vectorizerWorker, broadcasterWorker, graphSyncWorker];
+  const closed = Promise.allSettled(
+    workers.map((worker) => worker.close())
+  );
 
-// vectorizerWorker.on("completed", async (job, result) => {
-//     if (result) {
-//         console.log(`[Flow] Vectorizer finished ${job.id}. Queueing Broadcaster...`);
-//         await broadcasterQueue.add("broadcast", result);
-//     }
-// });
+  const timeout = new Promise((resolve) => setTimeout(resolve, SHUTDOWN_TIMEOUT_MS));
+  await Promise.race([closed, timeout]);
 
-// extractorWorker.on("failed", (job, err) => console.error(`[Extractor] Failed ${job?.id}`, err));
-// vectorizerWorker.on("failed", (job, err) => console.error(`[Vectorizer] Failed ${job?.id}`, err));
-// broadcasterWorker.on("failed", (job, err) => console.error(`[Broadcaster] Failed ${job?.id}`, err));
+  console.log("[Workers] Shutdown complete");
+  process.exit(0);
+}
 
-// const batchSyncWorker = createWorker(
-//     PROFILE_SYNC_QUEUE_NAME,
-//     profileSyncProcessor,
-//     1
-// );
-
-// batchSyncWorker.on("failed", (job, err) => {
-//     console.error(`[BatchSync] Failed job ${job?.id}`, err);
-// });
-// batchSyncWorker.on("completed", (job) => {
-
-// });
-
-// async function scheduleSyncHeartbeat() {
-//     const jobs = await profileSyncQueue.getRepeatableJobs();
-//     for (const job of jobs) {
-//         await profileSyncQueue.removeRepeatableByKey(job.key);
-//     }
-
-//     await profileSyncQueue.add(
-//         "batch-drain-pulse",
-//         {},
-//         {
-//             repeat: { every: 10 * 60 * 1000 },
-//             removeOnComplete: true
-//         }
-//     );
-//     console.log("ðŸ’“ Sync Heartbeat Scheduled");
-// }
-
-// scheduleSyncHeartbeat().catch(console.error);
-
-// console.log("âœ… All Systems Operational: Ingestion + Sync");
-
-
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
+process.on("SIGINT", () => void shutdown("SIGINT"));

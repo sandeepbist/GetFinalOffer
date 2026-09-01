@@ -102,7 +102,7 @@ export async function searchCandidatesHybrid(
         try {
             const cached = await SemanticCache.findExact(query, filters);
             if (cached) {
-                console.log("L1 Cache Hit");
+                console.debug("L1 cache hit");
                 await safeRecordGraphMetrics(graphMetricDefaults());
                 return {
                     data: cached.candidates,
@@ -166,7 +166,7 @@ export async function searchCandidatesHybrid(
             : liveResult.ids;
 
         if (combinedLiveIds.length > 0) {
-            console.log(`Live Search Hit: Found ${combinedLiveIds.length} candidates`);
+            console.debug(`Live search found ${combinedLiveIds.length} candidates`);
 
             const baseScores = buildRankScoreMap(combinedLiveIds);
             const hydratedLive = await hydrateCandidates(combinedLiveIds, filters, baseScores);
@@ -222,13 +222,13 @@ export async function searchCandidatesHybrid(
         const resolvedStrategy = strategy || await StrategistAgent.analyzeQuery(query);
         strategy = resolvedStrategy;
 
-        console.log("Search Strategy:", resolvedStrategy);
+        console.debug("Search strategy:", resolvedStrategy);
 
         queryVector = await generateEmbedding(resolvedStrategy.semanticFocus);
 
         const semanticCached = await SemanticCache.findSemantic(queryVector);
         if (semanticCached) {
-            console.log("L2 Semantic Cache Hit");
+            console.debug("L2 semantic cache hit");
             await safeRecordGraphMetrics(graphMetrics);
             return {
                 data: semanticCached.candidates,

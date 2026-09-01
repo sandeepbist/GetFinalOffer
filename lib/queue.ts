@@ -29,16 +29,6 @@ export const broadcasterQueue = new Queue(INGESTION_QUEUE_C, {
   defaultJobOptions: DEFAULT_OPTS,
 });
 
-export const PROFILE_SYNC_QUEUE_NAME = "profile-sync";
-export const profileSyncQueue = new Queue(PROFILE_SYNC_QUEUE_NAME, {
-  connection,
-  defaultJobOptions: {
-    removeOnComplete: true,
-    removeOnFail: true,
-    attempts: 2,
-  },
-});
-
 export const GRAPH_SYNC_QUEUE_NAME = "graph-sync";
 export const graphSyncQueue = new Queue(GRAPH_SYNC_QUEUE_NAME, {
   connection,

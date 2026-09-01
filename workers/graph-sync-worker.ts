@@ -68,7 +68,7 @@ async function fetchExtractedSkillsFromRedis(userId: string): Promise<CandidateS
   const raw = await redis.hgetall(key);
   const parsed: CandidateSkillEvidence[] = [];
 
-  for (const [_, value] of Object.entries(raw)) {
+  for (const [, value] of Object.entries(raw)) {
     try {
       const item = JSON.parse(value);
       const normalizedName = normalizeSkill(item.name || item.normalizedName || "");

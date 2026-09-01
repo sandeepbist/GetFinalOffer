@@ -11,7 +11,7 @@ let shouldRun = true;
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function runAnalyticsWorker() {
-    console.log("📊 Analytics Worker Loop Started (Adaptive Backoff Enabled)");
+    console.log("[Analytics] Worker loop started (adaptive backoff)");
 
     let currentBackoff = MIN_POLL_INTERVAL;
 
@@ -21,7 +21,7 @@ export async function runAnalyticsWorker() {
 
             if (processedCount > 0) {
 
-                console.log(`✅ Analytics: Processed ${processedCount} events`);
+                console.log(`[Analytics] Processed ${processedCount} events`);
                 currentBackoff = MIN_POLL_INTERVAL;
 
                 await sleep(50);
@@ -31,16 +31,16 @@ export async function runAnalyticsWorker() {
             }
         } catch (error: unknown) {
             const msg = error instanceof Error ? error.message : String(error);
-            console.error("🔥 Analytics Worker Critical Error:", msg);
+            console.error("[Analytics] Worker error:", msg);
             await sleep(ERROR_BACKOFF);
         }
     }
 
-    console.log("🛑 Analytics Worker Loop Exited Gracefully.");
+    console.log("[Analytics] Worker loop exited.");
 }
 
 export const stopAnalyticsWorker = async () => {
-    console.log("⚠️ Stopping Analytics Worker...");
+    console.log("[Analytics] Stopping worker loop...");
     shouldRun = false;
 };
 

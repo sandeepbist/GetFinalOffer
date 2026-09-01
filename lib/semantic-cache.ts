@@ -7,11 +7,6 @@ const redis = new Redis({
     token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
 });
 
-const vectorIndex = new Index({
-    url: process.env.UPSTASH_VECTOR_REST_URL || "",
-    token: process.env.UPSTASH_VECTOR_REST_TOKEN || "",
-});
-
 const CACHE_TTL_SECONDS = 60 * 60 * 24;
 const CACHE_PREFIX = "search:cache";
 const SEMANTIC_THRESHOLD = 0.95;
@@ -24,6 +19,26 @@ interface CachedSearchResult {
 
 interface VectorMetadata {
     cacheKey: string;
+}
+
+/**
+ * The Upstash Vector client throws at construction when its env vars are
+ * missing, which would take down every module importing this file. Build it
+ * lazily instead: without Vector configured, the L2 tier is simply skipped
+ * and search still works.
+ */
+let vectorIndex: Index | null = null;
+function getVectorIndex(): Index | null {
+    if (!process.env.UPSTASH_VECTOR_REST_URL || !process.env.UPSTASH_VECTOR_REST_TOKEN) {
+        return null;
+    }
+    if (!vectorIndex) {
+        vectorIndex = new Index({
+            url: process.env.UPSTASH_VECTOR_REST_URL,
+            token: process.env.UPSTASH_VECTOR_REST_TOKEN,
+        });
+    }
+    return vectorIndex;
 }
 
 export class SemanticCache {
@@ -56,7 +71,10 @@ export class SemanticCache {
         queryEmbedding: number[]
     ): Promise<CachedSearchResult | null> {
         try {
-            const results = await vectorIndex.query({
+            const index = getVectorIndex();
+            if (!index) return null;
+
+            const results = await index.query({
                 vector: queryEmbedding,
                 topK: 1,
                 includeMetadata: true,
@@ -66,7 +84,7 @@ export class SemanticCache {
                 const metadata = results[0].metadata as unknown as VectorMetadata;
 
                 if (metadata && metadata.cacheKey) {
-                    console.log(`Semantic Cache Hit! (Score: ${results[0].score}) -> Fetching from Redis`);
+                    console.debug(`Semantic cache hit (score: ${results[0].score})`);
                     return await redis.get<CachedSearchResult>(metadata.cacheKey);
                 }
             }
@@ -96,9 +114,10 @@ export class SemanticCache {
 
             let l2Promise = Promise.resolve();
 
-            if (embedding) {
+            const index = getVectorIndex();
+            if (embedding && index) {
                 const normalizedId = `${this.normalize(query)}-${Date.now()}`;
-                l2Promise = vectorIndex.upsert({
+                l2Promise = index.upsert({
                     id: normalizedId,
                     vector: embedding,
                     metadata: { cacheKey: key },

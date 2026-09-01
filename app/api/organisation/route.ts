@@ -9,9 +9,20 @@ import {
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { ApiErrors, successResponse } from "@/features/common/api/response";
 
+/**
+ * Public directory of partner organisations. Only the display fields are
+ * exposed; the signup domain is verified server-side in POST /api/recruiter,
+ * so clients never need it here and it must not be enumerable.
+ */
 export async function GET() {
   const organisations = await db
-    .select()
+    .select({
+      id: gfoPartnerOrganisationsTable.id,
+      name: gfoPartnerOrganisationsTable.name,
+      description: gfoPartnerOrganisationsTable.description,
+      teamSize: gfoPartnerOrganisationsTable.teamSize,
+      website: gfoPartnerOrganisationsTable.website,
+    })
     .from(gfoPartnerOrganisationsTable)
     .orderBy(gfoPartnerOrganisationsTable.name);
   return NextResponse.json(organisations);

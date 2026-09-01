@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and, desc } from "drizzle-orm";
 import db from "@/db";
-import { getCurrentSession } from "@/lib/auth/current-user";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import {
   gfoContactsTable,
   gfoContactDetailsTable,
@@ -13,12 +13,28 @@ import {
 } from "@/features/candidate/candidate-schemas";
 
 export async function POST(req: NextRequest) {
-  const session = await getCurrentSession();
-  if (!session?.user) {
+  let user;
+  try {
+    user = await getCurrentUser();
+  } catch {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
 
-  if (session.user.role !== "recruiter") {
+  if (user.role !== "recruiter") {
+    return NextResponse.json(
+      { success: false, error: "Only recruiters can send invites" },
+      { status: 403 }
+    );
+  }
+
+  // The role string alone is not authority: a real recruiter row for this
+  // user is required (it carries the organisation the stealth check uses).
+  const [recruiter] = await db
+    .select({ organisationId: gfoRecruitersTable.organisationId })
+    .from(gfoRecruitersTable)
+    .where(eq(gfoRecruitersTable.userId, user.id));
+
+  if (!recruiter) {
     return NextResponse.json(
       { success: false, error: "Only recruiters can send invites" },
       { status: 403 }
@@ -43,12 +59,7 @@ export async function POST(req: NextRequest) {
   // Stealth setting enforcement: a candidate who hid the recruiter's
   // organisation must be unreachable here too, not just in search. Return
   // the same 404 so the API cannot be used to confirm they exist.
-  const [recruiter] = await db
-    .select({ organisationId: gfoRecruitersTable.organisationId })
-    .from(gfoRecruitersTable)
-    .where(eq(gfoRecruitersTable.userId, session.user.id));
-
-  if (recruiter) {
+  {
     const [hidden] = await db
       .select({ id: gfoCandidateHiddenOrganisationsTable.id })
       .from(gfoCandidateHiddenOrganisationsTable)
@@ -71,7 +82,7 @@ export async function POST(req: NextRequest) {
     .from(gfoContactsTable)
     .where(
       and(
-        eq(gfoContactsTable.recruiterUserId, session.user.id),
+        eq(gfoContactsTable.recruiterUserId, user.id),
         eq(gfoContactsTable.candidateUserId, candidateUserId)
       )
     )
@@ -85,7 +96,7 @@ export async function POST(req: NextRequest) {
     const [newContact] = await tx
       .insert(gfoContactsTable)
       .values({
-        recruiterUserId: session.user.id,
+        recruiterUserId: user.id,
         candidateUserId: candidateUserId,
         contacter: "recruiter",
       })
@@ -101,13 +112,15 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  const session = await getCurrentSession();
-  if (!session?.user) {
+  let user;
+  try {
+    user = await getCurrentUser();
+  } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const role = session.user.role;
-  const userId = session.user.id;
+  const role = user.role;
+  const userId = user.id;
 
   if (role === "recruiter") {
     const contacts = await db.query.gfoContactsTable.findMany({
@@ -160,8 +173,10 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
-  const session = await getCurrentSession();
-  if (!session?.user) {
+  let user;
+  try {
+    user = await getCurrentUser();
+  } catch {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
 
@@ -188,7 +203,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ success: false, error: "Contact not found" }, { status: 404 });
   }
 
-  if (contact.candidateUserId !== session.user.id) {
+  if (contact.candidateUserId !== user.id) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import db from "@/db";
-import { gfoRecruitersTable, gfoPartnerOrganisationsTable } from "@/db/schemas";
+import {
+  gfoRecruitersTable,
+  gfoPartnerOrganisationsTable,
+  gfoUserTable,
+} from "@/db/schemas";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { ApiErrors, successResponse } from "@/features/common/api/response";
 
@@ -38,13 +42,22 @@ export async function POST(req: NextRequest) {
       return ApiErrors.forbidden("Work email domain does not match the selected organisation");
     }
 
-    await db
-      .insert(gfoRecruitersTable)
-      .values({
-        userId: user.id,
-        organisationId,
-      })
-      .onConflictDoNothing({ target: gfoRecruitersTable.userId });
+    await db.transaction(async (tx) => {
+      await tx
+        .insert(gfoRecruitersTable)
+        .values({
+          userId: user.id,
+          organisationId,
+        })
+        .onConflictDoNothing({ target: gfoRecruitersTable.userId });
+
+      // Roles are server-owned; this domain-verified flow is the only path
+      // that promotes an account to recruiter.
+      await tx
+        .update(gfoUserTable)
+        .set({ role: "recruiter" })
+        .where(eq(gfoUserTable.id, user.id));
+    });
 
     return successResponse();
   } catch (err) {

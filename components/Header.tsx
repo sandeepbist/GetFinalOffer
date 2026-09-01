@@ -23,7 +23,6 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useTheme } from "@/components/providers";
-import { isAdminEmail } from "@/lib/auth/admin-client";
 
 export function Header() {
   const { data: session, isPending } = authClient.useSession();
@@ -65,9 +64,7 @@ export function Header() {
 
   const user = session?.user;
   const userRole = (user as { role?: string })?.role;
-  const userEmail = (user as { email?: string } | undefined)?.email ?? "";
   const isLoggedIn = !!user && !isSigningOut;
-  const isAdmin = isLoggedIn && isAdminEmail(userEmail);
 
   const landingLinks = [
     { href: "/#how-it-works", label: "How It Works" },
@@ -83,16 +80,18 @@ export function Header() {
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   ];
 
+  // The admin link is visible to every signed-in user; the /admin layout
+  // enforces the real gate server-side, so non-admins get a 403 page.
+  // This keeps the admin allowlist itself out of the client bundle.
   const adminLinks = [
-    { href: "/admin/verification", label: "Verification Review", icon: ShieldCheck },
+    { href: "/admin", label: "Admin", icon: ShieldCheck },
   ];
 
   const activeNavLinks = isLoggedIn
-    ? isAdmin
-      ? [...(userRole === "recruiter" ? recruiterLinks : candidateLinks), ...adminLinks]
-      : userRole === "recruiter"
-        ? recruiterLinks
-        : candidateLinks
+    ? [
+        ...(userRole === "recruiter" ? recruiterLinks : candidateLinks),
+        ...adminLinks,
+      ]
     : landingLinks;
 
   return (

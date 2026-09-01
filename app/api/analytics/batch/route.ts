@@ -24,6 +24,14 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        // A single request must not be able to flood the worker buffer.
+        if (validation.data.length > 100) {
+            return NextResponse.json(
+                { error: "Batch too large; maximum 100 events" },
+                { status: 413 }
+            );
+        }
+
         // The session user is the authoritative author of every event; the
         // client-supplied userId field is never trusted for attribution.
         const authenticatedEvents = validation.data.map((event) => ({

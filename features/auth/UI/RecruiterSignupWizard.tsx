@@ -75,30 +75,20 @@ export default function RecruiterSignupWizard() {
       return;
     }
 
-    const emailDomain = values.email.split("@")[1]?.toLowerCase();
-    if (emailDomain !== org.domain.toLowerCase()) {
-      setError("email", {
-        type: "validate",
-        message: `Must use @${org.domain} email`,
-      });
-      return;
-    }
-
-    type SignUpParams = Parameters<typeof signUp.email>[0];
-
     const { data, error } = await signUp.email({
       name: values.fullName,
       email: values.email,
       password: values.password,
-      role: "recruiter",
       callbackURL: "/dashboard",
-    } as SignUpParams & { role: "recruiter" });
+    });
 
     if (error || !data?.user) {
       toast.error(error?.message || "Signup failed");
       return;
     }
 
+    // Signup creates a candidate account; the domain-verified recruiter
+    // endpoint promotes it to recruiter server-side.
     const { success, error: regErr } = await registerRecruiter({
       userId: data.user.id,
       organisationId: values.organisationId,
@@ -223,7 +213,7 @@ export default function RecruiterSignupWizard() {
                 <FormControl>
                   <div className="relative group">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted group-focus-within:text-primary transition-colors" />
-                    <Input {...field} type="password" placeholder="Min. 6 characters" className="pl-10 h-10" />
+                    <Input {...field} type="password" placeholder="Min. 8 characters" className="pl-10 h-10" />
                   </div>
                 </FormControl>
                 <FormMessage />

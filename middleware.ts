@@ -28,6 +28,29 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Cross-site state changes are rejected at the edge: browsers attach an
+  // Origin header to every cross-site POST/PUT/PATCH/DELETE. Better-auth
+  // re-validates origins on its cookie-bearing endpoints; this covers the
+  // cookie-less first-contact cases (e.g. fresh signups) and all app APIs.
+  const method = request.method.toUpperCase();
+  const origin = request.headers.get("origin");
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(method) && origin) {
+    const allowedOrigins = new Set(
+      [
+        nextUrl.origin,
+        process.env.NEXT_PUBLIC_APP_URL,
+        process.env.BETTER_AUTH_URL,
+        ...((process.env.BETTER_AUTH_TRUSTED_ORIGINS || "")
+          .split(",")
+          .map((o) => o.trim())
+          .filter(Boolean)),
+      ].filter(Boolean) as string[]
+    );
+    if (!allowedOrigins.has(origin)) {
+      return new NextResponse("Cross-origin request rejected", { status: 403 });
+    }
+  }
+
   if (isApiAuthRoute) {
     return NextResponse.next();
   }
@@ -64,5 +87,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

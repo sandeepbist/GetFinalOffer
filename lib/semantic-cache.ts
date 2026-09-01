@@ -19,6 +19,10 @@ interface CachedSearchResult {
 
 interface VectorMetadata {
     cacheKey: string;
+    // Fingerprint of the filters the result was produced under. A semantic
+    // hit from a different recruiter organisation must be rejected: the
+    // hidden-org exclusions in the payload were computed for another org.
+    filterFingerprint: string;
 }
 
 /**
@@ -52,6 +56,17 @@ export class SemanticCache {
         return `${CACHE_PREFIX}:exact:${normalized}:${filterKey}`;
     }
 
+    private static getFilterFingerprint(filters: CandidateSearchFilters): string {
+        const filterKey = JSON.stringify(filters, Object.keys(filters).sort());
+        // Keys embed the full JSON already; reuse a short digest for the
+        // vector metadata so org A's payloads can never satisfy org B.
+        let hash = 0;
+        for (let i = 0; i < filterKey.length; i++) {
+            hash = (hash * 31 + filterKey.charCodeAt(i)) >>> 0;
+        }
+        return hash.toString(36);
+    }
+
     static async findExact(
         query: string,
         filters: CandidateSearchFilters
@@ -68,7 +83,8 @@ export class SemanticCache {
 
 
     static async findSemantic(
-        queryEmbedding: number[]
+        queryEmbedding: number[],
+        filters: CandidateSearchFilters
     ): Promise<CachedSearchResult | null> {
         try {
             const index = getVectorIndex();
@@ -84,6 +100,11 @@ export class SemanticCache {
                 const metadata = results[0].metadata as unknown as VectorMetadata;
 
                 if (metadata && metadata.cacheKey) {
+                    // Reject hits produced under different filters: the cached
+                    // candidate set was trimmed against another org's blocklist.
+                    if (metadata.filterFingerprint !== this.getFilterFingerprint(filters)) {
+                        return null;
+                    }
                     console.debug(`Semantic cache hit (score: ${results[0].score})`);
                     return await redis.get<CachedSearchResult>(metadata.cacheKey);
                 }
@@ -120,7 +141,10 @@ export class SemanticCache {
                 l2Promise = index.upsert({
                     id: normalizedId,
                     vector: embedding,
-                    metadata: { cacheKey: key },
+                    metadata: {
+                        cacheKey: key,
+                        filterFingerprint: this.getFilterFingerprint(filters),
+                    },
                 }).then(() => { });
             }
 

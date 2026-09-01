@@ -39,7 +39,7 @@ export const SignupWizard: React.FC = () => {
     router.push("/dashboard");
   };
 
-  const isValid = fullName.trim() && email.trim() && password.length >= 6;
+  const isValid = fullName.trim() && email.trim() && password.length >= 8;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -100,7 +100,7 @@ export const SignupWizard: React.FC = () => {
             name="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Min. 6 characters"
+            placeholder="Min. 8 characters"
             className="pl-10 h-10"
           />
         </div>

@@ -11,8 +11,6 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { isAdminEmail } from "@/lib/auth/admin-client";
-import { authClient } from "@/lib/auth/auth-client";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
@@ -23,11 +21,7 @@ const NAV_ITEMS = [
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { data: session } = authClient.useSession();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-
-  const userEmail = (session?.user as { email?: string } | undefined)?.email ?? "";
-  const isAdmin = isAdminEmail(userEmail);
 
   const isActive = (item: (typeof NAV_ITEMS)[number]) =>
     item.exact ? pathname === item.href : pathname.startsWith(item.href);
@@ -55,11 +49,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       })}
     </nav>
   );
-
-  if (!isAdmin) {
-    // Non-admins never see the shell; the API layer rejects them anyway.
-    return <>{children}</>;
-  }
 
   return (
     <div className="min-h-screen bg-section">

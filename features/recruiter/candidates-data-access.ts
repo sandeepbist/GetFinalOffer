@@ -262,7 +262,7 @@ export async function searchCandidatesHybrid(
 
         queryVector = await generateEmbedding(resolvedStrategy.semanticFocus);
 
-        const semanticCached = await SemanticCache.findSemantic(queryVector);
+        const semanticCached = await SemanticCache.findSemantic(queryVector, filters);
         if (semanticCached) {
             console.debug("L2 semantic cache hit");
             await safeRecordGraphMetrics(graphMetrics);

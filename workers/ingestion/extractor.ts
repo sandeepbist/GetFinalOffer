@@ -72,10 +72,10 @@ async function extractSkillsWithLLM(text: string): Promise<ExtractedSkill[]> {
 
             let type: z.infer<typeof EvidenceTypeEnum> = "resume_section";
 
-            if (s.confidence >= 0.85) {
-                type = "project_description";
-            } else if (s.confidence >= 0.95) {
+            if (s.confidence >= 0.95) {
                 type = "interview_verified";
+            } else if (s.confidence >= 0.85) {
+                type = "project_description";
             }
 
             validSkills.push({
@@ -126,7 +126,7 @@ export const extractorWorker = new Worker<IngestionJobPayload, ExtractorOutput>(
     {
         connection: redis as unknown as ConnectionOptions,
         concurrency: 1,
-        drainDelay: getWorkerDrainDelaySeconds(),
+        drainDelay: getWorkerDrainDelaySeconds() * 1000,
         skipStalledCheck: true
     }
 );

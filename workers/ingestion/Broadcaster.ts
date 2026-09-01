@@ -7,7 +7,7 @@ import {
 import { eq } from "drizzle-orm";
 import { redis } from "@/lib/redis";
 import { queueGraphSync } from "@/lib/graph/sync";
-import { normalizeSkill } from "@/lib/graph/normalize-skill";
+import { normalizeSkill, toGraphSkillKey } from "@/lib/graph/normalize-skill";
 import { getWorkerDrainDelaySeconds } from "@/lib/worker-config";
 import { VectorizerOutput } from "./ingestion-dto";
 
@@ -60,8 +60,12 @@ export const broadcasterWorker = new Worker<VectorizerOutput>(
 
         for (const skill of extractedSkills) {
             if (skill.confidence > 0.6) {
-                const skillKey = `idx:skill:${skill.name.toLowerCase().replace(/\s+/g, '-')}`;
-                pipeline.sadd(skillKey, userId);
+                // Must use the same slugger as SearchEngine/graph-sync so all
+                // readers agree on idx:skill:* keys (e.g. "Node.js" -> nodejs).
+                const skillKey = toGraphSkillKey(skill.name);
+                if (skillKey) {
+                    pipeline.sadd(`idx:skill:${skillKey}`, userId);
+                }
             }
 
             if (skill.confidence >= 0.45) {
@@ -99,7 +103,7 @@ export const broadcasterWorker = new Worker<VectorizerOutput>(
     {
         connection: redis as unknown as ConnectionOptions,
         concurrency: 1,
-        drainDelay: getWorkerDrainDelaySeconds(),
+        drainDelay: getWorkerDrainDelaySeconds() * 1000,
         skipStalledCheck: true
     }
 );

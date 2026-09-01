@@ -182,6 +182,10 @@ export async function searchCandidatesHybrid(
                     buildBlendVariant(getGraphBlendWeight())
                 );
 
+                if (query.trim()) {
+                    hydratedLive.data = await crossEncoderRerank(query, hydratedLive.data);
+                }
+
                 const pageResult = {
                     data: paginateResults(hydratedLive.data, page, pageSize),
                     total: hydratedLive.total,

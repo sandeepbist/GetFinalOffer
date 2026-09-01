@@ -85,7 +85,7 @@ export const vectorizerWorker = new Worker<ExtractorOutput, VectorizerOutput>(
     {
         connection: redis as unknown as ConnectionOptions,
         concurrency: 1,
-        drainDelay: getWorkerDrainDelaySeconds(),
+        drainDelay: getWorkerDrainDelaySeconds() * 1000,
         skipStalledCheck: true
     }
 );

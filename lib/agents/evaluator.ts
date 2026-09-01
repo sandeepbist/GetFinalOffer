@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import type { CandidateSummaryDTO } from "@/features/recruiter/candidates-dto";
 import { createCircuitBreaker } from "@/lib/resilience";
+import { buildCandidatePassage } from "@/lib/reranker/cross-encoder";
 
 const openai = new OpenAI();
 
@@ -10,11 +11,11 @@ async function evaluateCandidatesRaw(
 ): Promise<CandidateSummaryDTO[]> {
     if (candidates.length === 0) return [];
 
-    const topCandidates = candidates.slice(0, 5);
-
-    const candidatesContext = topCandidates.map((c) =>
-        `ID: ${c.id} | Title: ${c.title} | Bio Snippet: ${c.matchHighlight || c.bio?.substring(0, 100)}`
-    ).join("\n");
+    // Evaluate every candidate on the page with the same information-dense
+    // representation the cross-encoder uses, so both rankers judge alike.
+    const candidatesContext = candidates
+        .map((c) => `ID: ${c.id} | ${buildCandidatePassage(c)}`)
+        .join("\n");
 
     const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
@@ -31,7 +32,7 @@ async function evaluateCandidatesRaw(
         ],
         response_format: { type: "json_object" },
         temperature: 0,
-        max_tokens: 250,
+        max_tokens: 1000,
     });
 
     const evaluations = JSON.parse(completion.choices[0].message.content || "{}").evaluations || {};

@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "npx playwright test",
-    "test:unit": "tsx --test lib/graph/*.test.ts scripts/graph/csv.test.ts features/graph/*.test.ts",
+    "test:unit": "tsx --test lib/graph/*.test.ts lib/reranker/*.test.ts lib/worker-config.test.ts scripts/graph/csv.test.ts features/graph/*.test.ts",
     "test:e2e:smoke": "npx playwright test e2e/smoke-public.spec.ts",
     "test:ui": "npx playwright test --ui",
     "test:headed": "npx playwright test --headed",

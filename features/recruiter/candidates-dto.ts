@@ -10,6 +10,7 @@ export interface CandidateSummaryDTO {
   companyCleared: string | null;
   matchHighlight?: string;
   matchScore?: number;
+  crossEncoderScore?: number;
   bio?: string | null;
   aiReasoning?: string;
   verificationStatus?: string;

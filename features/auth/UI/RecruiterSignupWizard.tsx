@@ -106,10 +106,14 @@ export default function RecruiterSignupWizard() {
 
     if (!success) {
       toast.error(regErr || "Failed to save recruiter profile");
+      // The account exists but has no recruiter row yet; retrying the whole
+      // form would hit a duplicate-email error, so send the user to login.
+      toast.info("Your account was created. Log in and we'll retry saving your recruiter profile.");
+      router.push("/auth");
       return;
     }
 
-    toast.success("Check your email to complete signup");
+    toast.success("Account created");
     router.push("/dashboard");
   };
 
@@ -255,7 +259,15 @@ export default function RecruiterSignupWizard() {
           transition={{ delay: 0.4, duration: 0.3 }}
           className="text-xs text-center text-text-muted"
         >
-          By clicking continue, you agree to our Terms of Service and Privacy Policy.
+          By clicking continue, you agree to our{" "}
+        <a href="/legal/terms" className="text-primary hover:underline">
+          Terms of Service
+        </a>{" "}
+        and{" "}
+        <a href="/legal/privacy" className="text-primary hover:underline">
+          Privacy Policy
+        </a>
+        .
         </motion.p>
       </form>
     </FormProvider>

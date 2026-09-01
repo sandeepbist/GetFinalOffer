@@ -12,14 +12,20 @@ import type {
   CandidateProfileSummaryDTO,
 } from "@/features/candidate/candidate-dto";
 import { VerificationStatus } from "@/features/candidate/dashboard/components/VerifyCallout";
-import { getCurrentUserId } from "@/lib/auth/current-user";
+import { getCurrentUser } from "@/lib/auth/current-user";
 
 export async function GET(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    await getCurrentUserId();
+    const user = await getCurrentUser();
+    if (user.role !== "recruiter") {
+      return NextResponse.json(
+        { error: "Recruiter access required" },
+        { status: 403 },
+      );
+    }
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

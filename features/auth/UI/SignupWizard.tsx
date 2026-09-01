@@ -6,10 +6,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { signUp } from "@/lib/auth/auth-client";
+import { useRouter } from "next/navigation";
 import { User, Mail, Lock } from "lucide-react";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 
 export const SignupWizard: React.FC = () => {
+  const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,7 +35,8 @@ export const SignupWizard: React.FC = () => {
       return;
     }
 
-    toast.success("Check your email to complete signup");
+    toast.success("Account created");
+    router.push("/dashboard");
   };
 
   const isValid = fullName.trim() && email.trim() && password.length >= 6;
@@ -128,7 +131,15 @@ export const SignupWizard: React.FC = () => {
         transition={{ delay: 0.4, duration: 0.3 }}
         className="text-xs text-center text-text-muted"
       >
-        By clicking continue, you agree to our Terms of Service and Privacy Policy.
+        By clicking continue, you agree to our{" "}
+        <a href="/legal/terms" className="text-primary hover:underline">
+          Terms of Service
+        </a>{" "}
+        and{" "}
+        <a href="/legal/privacy" className="text-primary hover:underline">
+          Privacy Policy
+        </a>
+        .
       </motion.p>
     </form>
   );

@@ -1,31 +1,36 @@
-import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import db from "@/db";
 import { gfoRecruitersTable } from "@/db/schemas";
-import { getCurrentUserId } from "@/lib/auth/current-user";
-
-export const config = {
-  api: { bodyParser: false },
-};
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { ApiErrors, successResponse } from "@/features/common/api/response";
 
 export async function POST() {
   try {
-    const userId = await getCurrentUserId();
+    const user = await getCurrentUser();
 
-    await db
+    if (user.role !== "recruiter") {
+      return ApiErrors.forbidden("Recruiter access required");
+    }
+
+    const updated = await db
       .update(gfoRecruitersTable)
       .set({
         verificationStatus: "pending",
         verificationRequestedAt: new Date(),
       })
-      .where(eq(gfoRecruitersTable.userId, userId));
+      .where(eq(gfoRecruitersTable.userId, user.id))
+      .returning({ userId: gfoRecruitersTable.userId });
 
-    return NextResponse.json({ success: true });
+    if (updated.length === 0) {
+      return ApiErrors.notFound("Recruiter profile");
+    }
+
+    return successResponse();
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : "An error occurred";
-    return NextResponse.json(
-      { success: false, error: errorMessage },
-      { status: 401 }
-    );
+    if (err instanceof Error && err.message.includes("Unauthorized")) {
+      return ApiErrors.unauthorized();
+    }
+    console.error("Error requesting recruiter verification:", err);
+    return ApiErrors.serverError();
   }
 }

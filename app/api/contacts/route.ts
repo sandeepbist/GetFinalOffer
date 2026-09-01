@@ -6,6 +6,7 @@ import {
   gfoContactsTable,
   gfoContactDetailsTable,
 } from "@/features/recruiter/recruiter-schemas";
+import { gfoCandidatesTable } from "@/features/candidate/candidate-schemas";
 
 export async function POST(req: NextRequest) {
   const session = await getCurrentSession();
@@ -21,8 +22,18 @@ export async function POST(req: NextRequest) {
   }
 
   const { candidateUserId } = (await req.json()) as { candidateUserId: string };
-  if (!candidateUserId) {
+  if (!candidateUserId || typeof candidateUserId !== "string") {
     return NextResponse.json({ success: false, error: "Missing candidateUserId" }, { status: 400 });
+  }
+
+  const [candidate] = await db
+    .select({ userId: gfoCandidatesTable.userId })
+    .from(gfoCandidatesTable)
+    .where(eq(gfoCandidatesTable.userId, candidateUserId))
+    .limit(1);
+
+  if (!candidate) {
+    return NextResponse.json({ success: false, error: "Candidate not found" }, { status: 404 });
   }
 
   const [existing] = await db
@@ -128,6 +139,10 @@ export async function PATCH(req: NextRequest) {
     contactId: string;
     status: string;
   };
+
+  if (!contactId || typeof contactId !== "string") {
+    return NextResponse.json({ success: false, error: "Missing contactId" }, { status: 400 });
+  }
 
   if (!["accepted", "rejected"].includes(status)) {
     return NextResponse.json({ success: false, error: "Invalid status" }, { status: 400 });

@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { bufferAnalyticsBatch } from "@/features/analytics/analytics-data-access";
 import { AnalyticsBatchSchema } from "@/features/analytics/analytics-validation";
+import { getCurrentSession } from "@/lib/auth/current-user";
 
 export async function POST(req: NextRequest) {
+    const session = await getCurrentSession();
+    if (!session?.user?.id) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     try {
-
         const body: unknown = await req.json();
-
 
         const validation = AnalyticsBatchSchema.safeParse(body);
 
         if (!validation.success) {
-
             return NextResponse.json(
                 {
                     error: "Invalid Analytics Batch Format",
@@ -21,13 +24,20 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        await bufferAnalyticsBatch(validation.data);
+        // The session user is the authoritative author of every event; the
+        // client-supplied userId field is never trusted for attribution.
+        const authenticatedEvents = validation.data.map((event) => ({
+            ...event,
+            userId: session.user.id,
+        }));
+
+        await bufferAnalyticsBatch(authenticatedEvents);
 
         return NextResponse.json({ success: true });
 
     } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : "Unknown API Error";
-        console.error("🔥 Analytics API Ingestion Failed:", errorMessage);
+        console.error("Analytics API Ingestion Failed:", errorMessage);
 
         return NextResponse.json(
             { error: "Internal Server Error" },

@@ -17,3 +17,11 @@ export const getCurrentUserId = async () => {
     }
     return session.user.id;
 };
+
+export const getCurrentUser = async () => {
+    const session = await getCurrentSession();
+    if (!session?.user?.id) {
+        throw new Error("Unauthorized: No session found");
+    }
+    return session.user;
+};

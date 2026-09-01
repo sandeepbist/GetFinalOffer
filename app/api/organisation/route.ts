@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { randomUUID } from "crypto";
+import { eq, inArray } from "drizzle-orm";
 import db from "@/db";
 import {
   gfoPartnerOrganisationsTable,
@@ -8,7 +7,7 @@ import {
   gfoCandidatesTable,
 } from "@/db/schemas";
 import { getCurrentUserId } from "@/lib/auth/current-user";
-
+import { ApiErrors, successResponse } from "@/features/common/api/response";
 
 export async function GET() {
   const organisations = await db
@@ -17,12 +16,13 @@ export async function GET() {
     .orderBy(gfoPartnerOrganisationsTable.name);
   return NextResponse.json(organisations);
 }
+
 export async function POST(req: NextRequest) {
   let userId: string;
   try {
     userId = await getCurrentUserId();
   } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return ApiErrors.unauthorized();
   }
 
   const [cand] = await db
@@ -30,29 +30,39 @@ export async function POST(req: NextRequest) {
     .from(gfoCandidatesTable)
     .where(eq(gfoCandidatesTable.userId, userId));
   if (!cand) {
-    return NextResponse.json(
-      { error: "Create your candidate profile before hiding organisations" },
-      { status: 400 },
-    );
+    return ApiErrors.badRequest("Create your candidate profile before hiding organisations");
   }
 
-  const { hiddenOrganisationIds } = (await req.json()) as {
-    hiddenOrganisationIds: string[];
-  };
+  const body = (await req.json()) as { hiddenOrganisationIds?: unknown };
+  const rawIds = Array.isArray(body.hiddenOrganisationIds) ? body.hiddenOrganisationIds : null;
+  if (!rawIds || rawIds.some((id) => typeof id !== "string")) {
+    return ApiErrors.badRequest("hiddenOrganisationIds must be an array of organisation IDs");
+  }
+  const hiddenOrganisationIds = Array.from(new Set(rawIds as string[]));
+
+  // Only ids of real partner organisations can be hidden; anything else would
+  // violate the foreign key at insert time and surface as a 500.
+  let existingIds: string[] = [];
+  if (hiddenOrganisationIds.length > 0) {
+    const rows = await db
+      .select({ id: gfoPartnerOrganisationsTable.id })
+      .from(gfoPartnerOrganisationsTable)
+      .where(inArray(gfoPartnerOrganisationsTable.id, hiddenOrganisationIds));
+    existingIds = rows.map((r) => r.id);
+  }
 
   await db
     .delete(gfoCandidateHiddenOrganisationsTable)
     .where(eq(gfoCandidateHiddenOrganisationsTable.candidateUserId, userId));
 
-  if (hiddenOrganisationIds.length > 0) {
+  if (existingIds.length > 0) {
     await db.insert(gfoCandidateHiddenOrganisationsTable).values(
-      hiddenOrganisationIds.map((orgId) => ({
-        id: randomUUID(),
+      existingIds.map((orgId) => ({
         candidateUserId: userId,
         organisationId: orgId,
       })),
     );
   }
 
-  return NextResponse.json({ success: true });
+  return successResponse();
 }

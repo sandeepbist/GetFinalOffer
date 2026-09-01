@@ -13,8 +13,11 @@ export async function createRecruiter(
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    return { success: false, error: text || "Failed to create recruiter" };
+    const body = await res.json().catch(() => null);
+    const message =
+      (body && typeof body.error === "string" && body.error) ||
+      "Failed to create recruiter";
+    return { success: false, error: message };
   }
   return res.json();
 }

@@ -10,6 +10,11 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
 
+minimumReleaseAgeExclude:
+  - '@eslint/eslintrc@3.3.7'
+  - bullmq@6.3.4
+  - lucide-react@1.39.0
+
 onlyBuiltDependencies:
   - '@sentry/cli'
   - '@tailwindcss/oxide'

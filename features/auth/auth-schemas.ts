@@ -37,6 +37,9 @@ export const gfoAccountTable = pgTable("gfo_account", {
     .references(() => gfoUserTable.id, { onDelete: "cascade" }),
   accountId: text("account_id").notNull(),
   providerId: text("provider_id").notNull(),
+  // better-auth >= 1.7: OIDC issuer for federated accounts; email/password
+  // accounts carry no issuer, so it must stay nullable.
+  issuer: text("issuer"),
   accessToken: text("access_token"),
   refreshToken: text("refresh_token"),
   accessTokenExpiresAt: timestamp("access_token_expires_at"),

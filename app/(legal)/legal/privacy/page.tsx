@@ -385,7 +385,7 @@ export default function PrivacyPolicyPage() {
                 <strong>For everyone:</strong> you can access, correct, or
                 delete your profile, skills, resume, interview progress, and
                 organisation-hiding settings directly in the Service, or by
-                contacting us at privacy@getfinaloffer.com. You can also
+                contacting us at sbist738@gmail.com. You can also
                 request a copy of your personal information or ask us to stop
                 processing it.
               </p>
@@ -400,7 +400,7 @@ export default function PrivacyPolicyPage() {
                 defined by law); and not be discriminated against for
                 exercising these rights. Subject to the law&apos;s exemptions,
                 we may need to verify your request by matching it to your
-                account. Submit requests to privacy@getfinaloffer.com. We do
+                account. Submit requests to sbist738@gmail.com. We do
                 not respond to browser &quot;Do Not Track&quot; signals
                 because we do not track you across third-party websites.
               </p>
@@ -468,7 +468,7 @@ export default function PrivacyPolicyPage() {
           body: (
             <p>
               Questions, requests, or complaints about this Privacy Policy or
-              your personal information: contact privacy@getfinaloffer.com.
+              your personal information: contact sbist738@gmail.com.
               For legal notices, see the contact information in our{" "}
               <a href="/legal/terms" className="text-primary hover:underline">
                 Terms of Use

@@ -177,7 +177,7 @@ export default function DataProcessingAddendumPage() {
                 of any intended addition or replacement of a sub-processors
                 provider with access to Customer&apos;s personal data, and
                 Customer may object on reasonable data-protection grounds by
-                contacting privacy@getfinaloffer.com.
+                contacting sbist738@gmail.com.
               </p>
             </>
           ),
@@ -294,7 +294,7 @@ export default function DataProcessingAddendumPage() {
               subject to its dispute-resolution provisions. If a conflict
               exists between this DPA and the Terms of Use, this DPA governs
               with respect to personal-data processing. Contact for this DPA:
-              privacy@getfinaloffer.com.
+              sbist738@gmail.com.
             </p>
           ),
         },

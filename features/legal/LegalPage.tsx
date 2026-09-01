@@ -66,10 +66,10 @@ export function LegalPage({
           <p>
             Questions about this document? Contact{" "}
             <a
-              href="mailto:legal@getfinaloffer.com"
+              href="mailto:sbist738@gmail.com"
               className="text-primary hover:underline"
             >
-              legal@getfinaloffer.com
+              sbist738@gmail.com
             </a>
             . See also our{" "}
             <a href="/legal/terms" className="text-primary hover:underline">Terms of Use</a>,{" "}

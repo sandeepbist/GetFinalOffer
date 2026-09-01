@@ -401,7 +401,7 @@ export default function TermsOfUsePage() {
                 arbitration, the parties agree to try to resolve the dispute
                 informally. The party raising the dispute must send written
                 notice to the other party at
-                legal@getfinaloffer.com. Within 45 days of receiving that
+                sbist738@gmail.com. Within 45 days of receiving that
                 notice, the parties will meet by phone or video in good faith
                 to try to resolve the dispute. If the dispute is not resolved
                 within 60 days, either party may proceed to arbitration.
@@ -432,7 +432,7 @@ export default function TermsOfUsePage() {
               <p>
                 <strong>Opt-out.</strong> You may opt out of this arbitration
                 agreement within 30 days of first accepting these Terms by
-                sending written notice to legal@getfinaloffer.com including
+                sending written notice to sbist738@gmail.com including
                 your name, account email, and a clear statement that you wish
                 to opt out. Opting out does not affect any other part of these
                 Terms.
@@ -498,7 +498,7 @@ export default function TermsOfUsePage() {
               </p>
               <p>
                 <strong>Contact.</strong> Questions about these Terms can be
-                sent to legal@getfinaloffer.com.
+                sent to sbist738@gmail.com.
               </p>
             </>
           ),

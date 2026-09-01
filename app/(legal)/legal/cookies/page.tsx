@@ -134,7 +134,7 @@ export default function CookieNoticePage() {
           body: (
             <p>
               Questions about this notice or our use of cookies:
-              privacy@getfinaloffer.com.
+              sbist738@gmail.com.
             </p>
           ),
         },

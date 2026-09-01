@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import db from "@/db";
 import {
@@ -201,19 +201,36 @@ export async function POST(req: NextRequest) {
     }
 
     if (interviewProgress.length) {
-      await db.insert(gfoCandidateInterviewProgressTable).values(
-        interviewProgress.map((e) => ({
-          id: e.id,
-          candidateUserId: userId,
-          companyId: e.companyId,
-          position: e.position,
-          roundsCleared: e.roundsCleared,
-          totalRounds: e.totalRounds,
-          status: e.status,
-          verificationStatus: "unverified",
-          dateCleared: new Date(e.dateCleared),
-        }))
-      );
+      // POST upserts the whole profile, so an existing entry with the same
+      // client-generated id must update rather than hit the primary key.
+      await db
+        .insert(gfoCandidateInterviewProgressTable)
+        .values(
+          interviewProgress.map((e) => ({
+            id: e.id,
+            candidateUserId: userId,
+            companyId: e.companyId,
+            position: e.position,
+            roundsCleared: e.roundsCleared,
+            totalRounds: e.totalRounds,
+            status: e.status,
+            verificationStatus: "unverified",
+            dateCleared: new Date(e.dateCleared),
+          }))
+        )
+        .onConflictDoUpdate({
+          target: gfoCandidateInterviewProgressTable.id,
+          set: {
+            companyId: sql`excluded.company_id`,
+            position: sql`excluded.position`,
+            roundsCleared: sql`excluded.rounds_cleared`,
+            totalRounds: sql`excluded.total_rounds`,
+            status: sql`excluded.status`,
+            verificationStatus: sql`excluded.verification_status`,
+            dateCleared: sql`excluded.date_cleared`,
+            updatedAt: new Date(),
+          },
+        });
     }
     queueProfileSync(userId).catch(console.error);
     queueGraphSync({ userId, reason: "candidate_profile_update" }).catch(console.error);

@@ -10,9 +10,16 @@ const candidateLinks = [
 ];
 
 const recruiterLinks = [
-  { label: "Search Talent", href: "/dashboard" },
-  { label: "Invite Candidates", href: "/dashboard" },
+  { label: "Search Talent", href: "/recruiter/candidates" },
+  { label: "Invite Candidates", href: "/recruiter/candidates" },
   { label: "Recruiter Access", href: "/auth" },
+];
+
+const legalLinks = [
+  { label: "Terms of Use", href: "/legal/terms" },
+  { label: "Privacy Policy", href: "/legal/privacy" },
+  { label: "Cookie Notice", href: "/legal/cookies" },
+  { label: "Data Processing Addendum", href: "/legal/dpa" },
 ];
 
 export function Footer() {
@@ -26,7 +33,7 @@ export function Footer() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr]"
+          className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]"
         >
           <div className="space-y-3">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-text-subtle">
@@ -63,6 +70,23 @@ export function Footer() {
             </p>
             <nav className="flex flex-col gap-2.5 text-sm">
               {recruiterLinks.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="text-text-muted transition-colors duration-200 hover:text-heading"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-subtle">
+              Legal
+            </p>
+            <nav className="flex flex-col gap-2.5 text-sm">
+              {legalLinks.map((link) => (
                 <Link
                   key={link.label}
                   href={link.href}

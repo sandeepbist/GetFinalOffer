@@ -26,15 +26,20 @@ export async function createCandidateProfile(
   dto: CreateCandidateProfileDTO
 ): Promise<boolean> {
   const body = new FormData();
-  body.append("userId", dto.userId);
-  body.append("professionalTitle", dto.professionalTitle);
-  body.append("currentRole", dto.currentRole);
-  body.append("yearsExperience", String(dto.yearsExperience));
-  body.append("location", dto.location);
-  body.append("verificationStatus", dto.verificationStatus);
-  body.append("bio", dto.bio);
-  body.append("skillIds", JSON.stringify(dto.skillIds));
-  body.append("interviewProgress", JSON.stringify(dto.interviewProgress));
+  // The server derives the user from the session; only the profile fields
+  // and the resume file travel in the request.
+  body.append(
+    "profile",
+    JSON.stringify({
+      professionalTitle: dto.professionalTitle,
+      currentRole: dto.currentRole,
+      yearsExperience: dto.yearsExperience,
+      location: dto.location,
+      bio: dto.bio,
+      skillIds: dto.skillIds,
+      interviewProgress: dto.interviewProgress,
+    })
+  );
   body.append("resume", dto.resumeFile);
 
   const res = await apiAdapter.post<CreateCandidateResponse>("/candidate", body);

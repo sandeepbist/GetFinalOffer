@@ -1,17 +1,17 @@
 import type { NextRequest } from "next/server";
 import { eq, and, inArray } from "drizzle-orm";
-import { randomUUID } from "crypto";
+import { z } from "zod";
 import db from "@/db";
 import {
   gfoCandidatesTable,
   gfoCandidateSkillsTable,
   gfoSkillsLibraryTable,
   gfoCandidateInterviewProgressTable,
+  gfoCandidateHiddenOrganisationsTable,
   gfoVerificationRequestsTable,
   gfoVerificationDocumentsTable,
 } from "@/db/schemas";
 import type {
-  InterviewProgressEntryDTO,
   CandidateProfileSummaryDTO,
 } from "@/features/candidate/candidate-dto";
 import { VerificationStatus } from "@/features/candidate/dashboard/components/VerifyCallout";
@@ -23,6 +23,12 @@ import { getCurrentUserId } from "@/lib/auth/current-user";
 import { removeVerificationDocs } from "@/lib/verification-storage";
 import { ApiErrors, successResponse } from "@/features/common/api/response";
 import { validateFile } from "@/features/common/api/file-validation";
+import {
+  candidateProfileSchema,
+  candidateProfileUpdateSchema,
+  interviewProgressEntrySchema,
+  zodFieldErrors,
+} from "@/features/common/api/validation";
 
 async function handleResumeUpload(userId: string, file: File, bio: string) {
   const filename = `${userId}-${Date.now()}-${file.name.replace(
@@ -83,6 +89,13 @@ export async function GET() {
     .from(gfoCandidateInterviewProgressTable)
     .where(eq(gfoCandidateInterviewProgressTable.candidateUserId, userId));
 
+  const hiddenRows = await db
+    .select({
+      organisationId: gfoCandidateHiddenOrganisationsTable.organisationId,
+    })
+    .from(gfoCandidateHiddenOrganisationsTable)
+    .where(eq(gfoCandidateHiddenOrganisationsTable.candidateUserId, userId));
+
   const summary: CandidateProfileSummaryDTO = {
     userId,
     professionalTitle: candidate.professionalTitle ?? "",
@@ -94,6 +107,7 @@ export async function GET() {
     resumeUrl: candidate.resumeUrl,
     skillIds: skillRows.map((r) => r.skillId),
     skills: skillRows.map((r) => r.name),
+    hiddenOrganisationIds: hiddenRows.map((r) => r.organisationId),
     interviewProgress: progressRows.map((r) => ({
       id: r.id,
       companyId: r.companyId,
@@ -111,24 +125,23 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const verifiedUserId = await getCurrentUserId();
+    const userId = await getCurrentUserId();
     const form = await req.formData();
-    const userId = verifiedUserId;
-    const professionalTitle = form.get("professionalTitle")!.toString();
-    const currentRole = form.get("currentRole")!.toString();
-    const yearsExperience = parseInt(
-      form.get("yearsExperience")!.toString(),
-      10
-    );
-    const location = form.get("location")!.toString();
-    const bio = form.get("bio")!.toString();
-    const skillIds = JSON.parse(form.get("skillIds")!.toString()) as string[];
-    const interviewProgress = JSON.parse(
-      form.get("interviewProgress")!.toString()
-    ) as InterviewProgressEntryDTO[];
 
-    const resumeFile = form.get("resume") as File;
-    if (!resumeFile) {
+    let rawProfile: unknown;
+    try {
+      rawProfile = JSON.parse(form.get("profile")?.toString() || "{}");
+    } catch {
+      return ApiErrors.badRequest("profile must be valid JSON");
+    }
+    const parsed = candidateProfileSchema.safeParse(rawProfile);
+    if (!parsed.success) {
+      return ApiErrors.validationError(zodFieldErrors(parsed.error));
+    }
+    const { professionalTitle, currentRole, yearsExperience, location, bio, skillIds, interviewProgress } = parsed.data;
+
+    const resumeFile = form.get("resume");
+    if (!(resumeFile instanceof File)) {
       return ApiErrors.badRequest("Resume file is required");
     }
 
@@ -137,22 +150,50 @@ export async function POST(req: NextRequest) {
       return ApiErrors.badRequest(fileValidation.error || "Invalid file");
     }
 
+    // Resolve skills against the library up front so bad ids fail with a 422
+    // instead of an FK violation after the resume was already stored.
+    let resolvedSkillIds: string[] = [];
+    if (skillIds.length > 0) {
+      const rows = await db
+        .select({ id: gfoSkillsLibraryTable.id })
+        .from(gfoSkillsLibraryTable)
+        .where(inArray(gfoSkillsLibraryTable.id, skillIds));
+      resolvedSkillIds = rows.map((r) => r.id);
+    }
+
     const resumeUrl = await handleResumeUpload(userId, resumeFile, bio);
 
-    await db.insert(gfoCandidatesTable).values({
-      userId,
-      professionalTitle,
-      currentRole,
-      yearsExperience,
-      location,
-      bio,
-      resumeUrl,
-    });
+    await db
+      .insert(gfoCandidatesTable)
+      .values({
+        userId,
+        professionalTitle,
+        currentRole,
+        yearsExperience,
+        location,
+        bio,
+        resumeUrl,
+      })
+      .onConflictDoUpdate({
+        target: gfoCandidatesTable.userId,
+        set: {
+          professionalTitle,
+          currentRole,
+          yearsExperience,
+          location,
+          bio,
+          resumeUrl,
+          updatedAt: new Date(),
+        },
+      });
 
-    if (skillIds.length) {
+    await db
+      .delete(gfoCandidateSkillsTable)
+      .where(eq(gfoCandidateSkillsTable.candidateUserId, userId));
+
+    if (resolvedSkillIds.length > 0) {
       await db.insert(gfoCandidateSkillsTable).values(
-        skillIds.map((id) => ({
-          id: randomUUID(),
+        resolvedSkillIds.map((id) => ({
           candidateUserId: userId,
           skillId: id,
         }))
@@ -162,7 +203,7 @@ export async function POST(req: NextRequest) {
     if (interviewProgress.length) {
       await db.insert(gfoCandidateInterviewProgressTable).values(
         interviewProgress.map((e) => ({
-          id: randomUUID(),
+          id: e.id,
           candidateUserId: userId,
           companyId: e.companyId,
           position: e.position,
@@ -228,17 +269,25 @@ export async function PATCH(req: NextRequest) {
       return ApiErrors.serverError("Failed to upload resume");
     }
   } else {
-    const { action, progress } = await req.json();
-    if (action !== "progress") {
+    const body = (await req.json()) as { action?: string; progress?: unknown };
+    if (body.action !== "progress") {
       return ApiErrors.badRequest("Unknown action");
     }
 
-    const incoming = progress as InterviewProgressEntryDTO[];
+    const progressResult = z
+      .array(interviewProgressEntrySchema)
+      .max(100)
+      .safeParse(body.progress);
+    if (!progressResult.success) {
+      return ApiErrors.validationError(zodFieldErrors(progressResult.error));
+    }
+    const incoming = progressResult.data;
 
     const existingRows = await db
-      .select({ id: gfoCandidateInterviewProgressTable.id })
+      .select()
       .from(gfoCandidateInterviewProgressTable)
       .where(eq(gfoCandidateInterviewProgressTable.candidateUserId, userId));
+    const existingById = new Map(existingRows.map((r) => [r.id, r]));
     const existingIds = existingRows.map((r) => r.id);
 
     const incomingIds = incoming.map((e) => e.id);
@@ -281,7 +330,18 @@ export async function PATCH(req: NextRequest) {
     }
 
     for (const e of incoming) {
-      if (existingIds.includes(e.id)) {
+      const existing = existingById.get(e.id);
+      // Editing a verified entry invalidates the verification only when a
+      // substantive claim actually changed.
+      const isUnchanged = existing &&
+        existing.companyId === e.companyId &&
+        existing.position === e.position &&
+        existing.roundsCleared === e.roundsCleared &&
+        existing.totalRounds === e.totalRounds &&
+        existing.status === e.status &&
+        existing.dateCleared.getTime() === new Date(e.dateCleared).getTime();
+
+      if (existing) {
         await db
           .update(gfoCandidateInterviewProgressTable)
           .set({
@@ -290,8 +350,10 @@ export async function PATCH(req: NextRequest) {
             roundsCleared: e.roundsCleared,
             totalRounds: e.totalRounds,
             status: e.status,
-            verificationStatus: "unverified",
-            verificationRequestedAt: null,
+            ...(isUnchanged ? {} : {
+              verificationStatus: "unverified",
+              verificationRequestedAt: null,
+            }),
             dateCleared: new Date(e.dateCleared),
           })
           .where(eq(gfoCandidateInterviewProgressTable.id, e.id));
@@ -325,29 +387,51 @@ export async function PUT(req: NextRequest) {
     return ApiErrors.unauthorized();
   }
 
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return ApiErrors.badRequest("Request body must be JSON");
+  }
 
+  const parsed = candidateProfileUpdateSchema.omit({ resumeUrl: true }).safeParse(body);
+  if (!parsed.success) {
+    return ApiErrors.validationError(zodFieldErrors(parsed.error));
+  }
+  const { professionalTitle, currentRole, yearsExperience, location, bio, skillIds } = parsed.data;
+
+  let resolvedSkillIds: string[] = [];
+  if (skillIds.length > 0) {
+    const rows = await db
+      .select({ id: gfoSkillsLibraryTable.id })
+      .from(gfoSkillsLibraryTable)
+      .where(inArray(gfoSkillsLibraryTable.id, skillIds));
+    resolvedSkillIds = rows.map((r) => r.id);
+  }
+
+  // resumeUrl is intentionally never written here: it is managed by the
+  // upload path and must not be overridable from the client.
   await db
     .insert(gfoCandidatesTable)
     .values({
       userId,
-      professionalTitle: body.professionalTitle,
-      currentRole: body.currentRole,
-      yearsExperience: body.yearsExperience,
-      location: body.location,
-      bio: body.bio,
-      resumeUrl: body.resumeUrl ?? "",
+      professionalTitle,
+      currentRole,
+      yearsExperience,
+      location,
+      bio,
+      resumeUrl: "",
       verificationStatus: "unverified",
     })
     .onConflictDoUpdate({
       target: gfoCandidatesTable.userId,
       set: {
-        professionalTitle: body.professionalTitle,
-        currentRole: body.currentRole,
-        yearsExperience: body.yearsExperience,
-        location: body.location,
-        bio: body.bio,
-        ...(body.resumeUrl && { resumeUrl: body.resumeUrl }),
+        professionalTitle,
+        currentRole,
+        yearsExperience,
+        location,
+        bio,
+        updatedAt: new Date(),
       },
     });
 
@@ -355,15 +439,14 @@ export async function PUT(req: NextRequest) {
     .delete(gfoCandidateSkillsTable)
     .where(eq(gfoCandidateSkillsTable.candidateUserId, userId));
 
-  if (Array.isArray(body.skillIds) && body.skillIds.length) {
+  if (resolvedSkillIds.length > 0) {
     await db.insert(gfoCandidateSkillsTable).values(
-      body.skillIds.map((sid: string) => ({
+      resolvedSkillIds.map((sid) => ({
         candidateUserId: userId,
         skillId: sid,
       }))
     );
   }
-
 
   queueProfileSync(userId).catch(console.error);
   queueGraphSync({ userId, reason: "candidate_profile_update" }).catch(console.error);

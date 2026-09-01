@@ -43,6 +43,7 @@ export interface CandidateProfileSummaryDTO {
   resumeUrl: string;
   skillIds: string[];
   skills: string[];
+  hiddenOrganisationIds?: string[];
   interviewProgress: InterviewProgressEntryDTO[];
   verificationStatus: VerificationStatus;
 }

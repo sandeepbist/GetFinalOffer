@@ -116,6 +116,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
     ]).then(([p, i]) => {
       setProfile(p);
       setInvites(i);
+      if (p) setHiddenOrgs(p.hiddenOrganisationIds ?? []);
       if (dashboardCache.data) {
         dashboardCache.data.p = p;
         dashboardCache.data.i = i;
@@ -165,6 +166,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
               about: p.bio,
             });
             setSelSkills(p.skillIds);
+            setHiddenOrgs(p.hiddenOrganisationIds ?? []);
           }
         })
         .catch(() => {

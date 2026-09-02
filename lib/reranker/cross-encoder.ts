@@ -9,7 +9,11 @@ if (process.env.VERCEL || process.env.NODE_ENV === "production") {
     env.cacheDir = "/tmp/.transformers_cache";
 }
 
-const MODEL_ID = "Xenova/ms-marco-TinyBERT-L-2-v2";
+// ms-marco MiniLM L-6: same sigmoid-scored relevance contract as the
+// original TinyBERT L-2 but 6 layers deep (~22M params vs ~4M) — materially
+// better ranking on the ms-marco benchmark family while staying small
+// enough for quantized ONNX inference (~23MB). Env-overridable for A/B.
+const MODEL_ID = process.env.RERANKER_MODEL || "Xenova/ms-marco-MiniLM-L-6-v2";
 
 interface RerankerInstance {
     tokenizer: (queries: string[], options: Record<string, unknown>) => Promise<unknown>;
@@ -90,7 +94,7 @@ export async function crossEncoderRerank(
                 text_pair: passages,
                 padding: true,
                 truncation: true,
-                max_length: 256,
+                max_length: 384,
             });
 
             const { logits } = await model(inputs);

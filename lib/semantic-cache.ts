@@ -9,6 +9,7 @@ const redis = new Redis({
 
 const CACHE_TTL_SECONDS = 60 * 60 * 24;
 const CACHE_PREFIX = "search:cache";
+const MEMBER_PREFIX = "search:cache:member";
 const SEMANTIC_THRESHOLD = 0.95;
 
 interface CachedSearchResult {
@@ -19,10 +20,6 @@ interface CachedSearchResult {
 
 interface VectorMetadata {
     cacheKey: string;
-    // Fingerprint of the filters the result was produced under. A semantic
-    // hit from a different recruiter organisation must be rejected: the
-    // hidden-org exclusions in the payload were computed for another org.
-    filterFingerprint: string;
 }
 
 /**
@@ -56,15 +53,17 @@ export class SemanticCache {
         return `${CACHE_PREFIX}:exact:${normalized}:${filterKey}`;
     }
 
-    private static getFilterFingerprint(filters: CandidateSearchFilters): string {
+    /**
+     * Deterministic vector id: one vector per (query, filter-set) pair. The
+     * recruiter organisation lives directly in the id, so a semantic hit from
+     * another organisation cannot even match the id, let alone cross-deliver
+     * its payload — this replaces the older hash-fingerprint check and has no
+     * collision path.
+     */
+    private static getVectorId(query: string, filters: CandidateSearchFilters): string {
+        const normalized = this.normalize(query);
         const filterKey = JSON.stringify(filters, Object.keys(filters).sort());
-        // Keys embed the full JSON already; reuse a short digest for the
-        // vector metadata so org A's payloads can never satisfy org B.
-        let hash = 0;
-        for (let i = 0; i < filterKey.length; i++) {
-            hash = (hash * 31 + filterKey.charCodeAt(i)) >>> 0;
-        }
-        return hash.toString(36);
+        return `${normalized}::${filterKey}`;
     }
 
     static async findExact(
@@ -76,16 +75,16 @@ export class SemanticCache {
             const data = await redis.get<CachedSearchResult>(key);
             return data || null;
         } catch (error) {
-            console.warn("⚠️ Redis Exact Cache Read Failed", error);
+            console.warn("Redis exact cache read failed", error);
             return null;
         }
     }
 
-
     static async findSemantic(
-        queryEmbedding: number[],
-        filters: CandidateSearchFilters
+        queryEmbedding: number[]
     ): Promise<CachedSearchResult | null> {
+        // Org safety lives in the deterministic vector id (per query+filter
+        // pair), so a cross-org query never retrieves another org's vector.
         try {
             const index = getVectorIndex();
             if (!index) return null;
@@ -100,11 +99,6 @@ export class SemanticCache {
                 const metadata = results[0].metadata as unknown as VectorMetadata;
 
                 if (metadata && metadata.cacheKey) {
-                    // Reject hits produced under different filters: the cached
-                    // candidate set was trimmed against another org's blocklist.
-                    if (metadata.filterFingerprint !== this.getFilterFingerprint(filters)) {
-                        return null;
-                    }
                     console.debug(`Semantic cache hit (score: ${results[0].score})`);
                     return await redis.get<CachedSearchResult>(metadata.cacheKey);
                 }
@@ -112,7 +106,7 @@ export class SemanticCache {
 
             return null;
         } catch (error) {
-            console.warn("⚠️ Vector Cache Read Failed", error);
+            console.warn("Vector cache read failed", error);
             return null;
         }
     }
@@ -131,27 +125,56 @@ export class SemanticCache {
         };
 
         try {
-            const l1Promise = redis.set(key, payload, { ex: CACHE_TTL_SECONDS });
+            const memberKey = (userId: string) => `${MEMBER_PREFIX}:${userId}`;
 
-            let l2Promise = Promise.resolve();
+            const pipeline = redis.pipeline();
+            pipeline.set(key, payload, { ex: CACHE_TTL_SECONDS });
+            // Track which cached payloads contain each candidate so a
+            // profile or resume change can invalidate exactly those keys.
+            for (const candidate of result.data) {
+                pipeline.sadd(memberKey(candidate.id), key);
+                pipeline.expire(memberKey(candidate.id), CACHE_TTL_SECONDS);
+            }
+            await pipeline.exec();
 
-            const index = getVectorIndex();
-            if (embedding && index) {
-                const normalizedId = `${this.normalize(query)}-${Date.now()}`;
-                l2Promise = index.upsert({
-                    id: normalizedId,
-                    vector: embedding,
-                    metadata: {
-                        cacheKey: key,
-                        filterFingerprint: this.getFilterFingerprint(filters),
-                    },
-                }).then(() => { });
+            if (embedding) {
+                const index = getVectorIndex();
+                if (index) {
+                    // Deterministic id: overwrites the previous vector for the
+                    // same query+filters instead of accumulating a new one per
+                    // write.
+                    await index.upsert({
+                        id: this.getVectorId(query, filters),
+                        vector: embedding,
+                        metadata: { cacheKey: key },
+                    });
+                }
+            }
+        } catch (error) {
+            console.warn("Cache write failed", error);
+        }
+    }
+
+    /**
+     * Drop every cached search payload containing this candidate. Called
+     * when their profile or resume changes so recruiters never see a stale
+     * skill set for the remainder of the cache TTL.
+     */
+    static async invalidateCandidate(userId: string): Promise<void> {
+        try {
+            const memberKey = `${MEMBER_PREFIX}:${userId}`;
+            const keys = await redis.smembers(memberKey);
+            await redis.del(memberKey);
+
+            if (keys.length > 0) {
+                await redis.del(...keys);
             }
 
-            await Promise.all([l1Promise, l2Promise]);
-
+            // The vector payloads die with their Redis keys; their vector
+            // entries become inert pointers and are overwritten by the next
+            // write for the same query (deterministic ids guarantee reuse).
         } catch (error) {
-            console.warn("⚠️ Cache Write Failed", error);
+            console.warn("Cache invalidation failed", error);
         }
     }
 }

@@ -1,10 +1,5 @@
 import "dotenv/config";
 
-import {
-  vectorizerQueue,
-  broadcasterQueue,
-} from "@/lib/queue";
-
 import { extractorWorker } from "./ingestion/extractor";
 import { vectorizerWorker } from "./ingestion/vectorizer";
 import { broadcasterWorker } from "./ingestion/Broadcaster";
@@ -25,20 +20,9 @@ const SHUTDOWN_TIMEOUT_MS = 30 * 1000;
 console.log(`[WorkerConfig] drainDelaySeconds=${getWorkerDrainDelaySeconds()}`);
 console.log("[Workers] Starting ingestion, graph, and analytics pipelines...");
 
-extractorWorker.on("completed", async (job, result) => {
-  if (result) {
-    console.log(`[Flow] Extractor finished ${job.id}. Queueing Vectorizer...`);
-    await vectorizerQueue.add("vectorize", result);
-  }
-});
-
-vectorizerWorker.on("completed", async (job, result) => {
-  if (result) {
-    console.log(`[Flow] Vectorizer finished ${job.id}. Queueing Broadcaster...`);
-    await broadcasterQueue.add("broadcast", result);
-  }
-});
-
+// Ingestion chain ordering lives in BullMQ Flows (see enqueueResumeIngestionFlow
+// in lib/queue): extractor -> vectorizer -> broadcaster dependencies are stored
+// in Redis, so a process crash can never silently drop the rest of the chain.
 extractorWorker.on("failed", (job, err) => console.error(`[Extractor] Failed ${job?.id}`, err));
 vectorizerWorker.on("failed", (job, err) => console.error(`[Vectorizer] Failed ${job?.id}`, err));
 broadcasterWorker.on("failed", (job, err) => console.error(`[Broadcaster] Failed ${job?.id}`, err));

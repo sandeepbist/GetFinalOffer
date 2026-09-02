@@ -26,7 +26,7 @@ async function initReranker(): Promise<RerankerInstance | null> {
         });
         return { tokenizer, model };
     } catch (error) {
-        console.warn("⚠️ Cross-Encoder model initialization failed, using fallback:", error);
+        console.warn("Cross-encoder model initialization failed, using fallback:", error);
         return null;
     }
 }
@@ -116,7 +116,7 @@ export async function crossEncoderRerank(
         let timer: NodeJS.Timeout | undefined;
         const timeoutPromise = new Promise<CandidateSummaryDTO[]>((resolve) => {
             timer = setTimeout(() => {
-                console.warn(`⚠️ Cross-Encoder timed out (${timeoutMs}ms), returning baseline candidates`);
+                console.warn(`Cross-encoder timed out (${timeoutMs}ms), returning baseline candidates`);
                 resolve(candidates);
             }, timeoutMs);
         });
@@ -127,7 +127,7 @@ export async function crossEncoderRerank(
             if (timer) clearTimeout(timer);
         }
     } catch (err) {
-        console.warn("⚠️ Cross-Encoder reranking error, falling back:", err);
+        console.warn("Cross-encoder reranking error, falling back:", err);
         return candidates;
     }
 }

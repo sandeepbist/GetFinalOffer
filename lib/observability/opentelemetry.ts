@@ -26,14 +26,14 @@ if (process.env.NEXT_RUNTIME === "nodejs") {
 
     try {
         sdk.start();
-        console.log("✅ OpenTelemetry initialized (Honeycomb Direct)");
+        console.log("[OTel] Initialized (Honeycomb Direct)");
     } catch (error) {
-        console.error("❌ Error initializing OpenTelemetry:", error);
+        console.error("[OTel] Initialization failed:", error);
     }
 
     process.on("SIGTERM", () => {
         sdk.shutdown()
-            .then(() => console.log("OTel SDK terminated"))
+            .then(() => console.log("[OTel] SDK terminated"))
             .catch((error) => console.log("Error terminating OTel SDK", error))
             .finally(() => process.exit(0));
     });

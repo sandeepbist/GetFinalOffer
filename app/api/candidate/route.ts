@@ -16,9 +16,10 @@ import type {
 } from "@/features/candidate/candidate-dto";
 import { VerificationStatus } from "@/features/candidate/dashboard/components/VerifyCallout";
 import { supabase } from "@/lib/supabase";
-import { resumeQueue } from "@/lib/queue";
+import { enqueueResumeIngestionFlow } from "@/lib/queue";
 import { queueProfileSync } from "@/lib/sync-buffer";
 import { queueGraphSync } from "@/lib/graph/sync";
+import { SemanticCache } from "@/lib/semantic-cache";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { removeVerificationDocs } from "@/lib/verification-storage";
 import { createResumeSignedUrl } from "@/lib/resume-storage";
@@ -43,8 +44,10 @@ async function handleResumeUpload(userId: string, file: File, bio: string) {
   if (uploadError) throw new Error(`Storage Error: ${uploadError.message}`);
 
   // Store the bare storage path; readable links are minted per request via
-  // createResumeSignedUrl so no long-lived public URL ever exists.
-  await resumeQueue.add("process-resume", {
+  // createResumeSignedUrl so no long-lived public URL ever exists. The whole
+  // extraction -> vectorization -> broadcast chain is enqueued as one atomic
+  // BullMQ flow.
+  await enqueueResumeIngestionFlow({
     userId,
     resumeUrl: filename,
     bio,
@@ -234,6 +237,9 @@ export async function POST(req: NextRequest) {
     }
     queueProfileSync(userId).catch(console.error);
     queueGraphSync({ userId, reason: "candidate_profile_update" }).catch(console.error);
+    // Profile/skills/progress changed what recruiters see; drop cached
+    // search payloads containing this candidate.
+    SemanticCache.invalidateCandidate(userId).catch(console.error);
 
     return successResponse(undefined, "Profile created. Resume processing in background.");
   } catch (err) {
@@ -281,6 +287,9 @@ export async function PATCH(req: NextRequest) {
         .set({ resumeUrl })
         .where(eq(gfoCandidatesTable.userId, userId));
       queueGraphSync({ userId, reason: "candidate_profile_update" }).catch(console.error);
+      // Cached search payloads still describe the old resume; the ingestion
+      // pipeline re-indexes, but drop the stale entries now.
+      SemanticCache.invalidateCandidate(userId).catch(console.error);
       return successResponse({ resumeUrl }, "Resume uploaded successfully");
     } catch {
       return ApiErrors.serverError("Failed to upload resume");
@@ -391,6 +400,9 @@ export async function PATCH(req: NextRequest) {
 
     queueProfileSync(userId).catch(console.error);
     queueGraphSync({ userId, reason: "candidate_profile_update" }).catch(console.error);
+    // Profile/skills/progress changed what recruiters see; drop cached
+    // search payloads containing this candidate.
+    SemanticCache.invalidateCandidate(userId).catch(console.error);
 
     return successResponse(undefined, "Progress updated");
   }
@@ -467,6 +479,9 @@ export async function PUT(req: NextRequest) {
 
   queueProfileSync(userId).catch(console.error);
   queueGraphSync({ userId, reason: "candidate_profile_update" }).catch(console.error);
+  // Profile/skills/progress changed what recruiters see; drop cached
+  // search payloads containing this candidate.
+  SemanticCache.invalidateCandidate(userId).catch(console.error);
 
   return successResponse(undefined, "Profile updated");
 }

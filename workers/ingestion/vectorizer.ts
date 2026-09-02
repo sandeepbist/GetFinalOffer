@@ -18,7 +18,18 @@ function hashText(text: string): string {
 export const vectorizerWorker = new Worker<ExtractorOutput, VectorizerOutput>(
     "ingestion-vectorizer",
     async (job: Job<ExtractorOutput>) => {
-        const { userId, rawChunks, extractedSkills } = job.data;
+        // In flow mode this job's data carries the extractor's payload;
+        // it is set from the child's completed output when the flow parent
+        // waits, but getChildrenValues is authoritative — read the child's
+        // actual result so a resumed/retried chain always uses real data.
+        const childValues = await job.getChildrenValues<ExtractorOutput>();
+        const childKeys = Object.keys(childValues);
+        const extractorOutput =
+            childKeys.length > 0
+                ? childValues[childKeys[0]]
+                : job.data;
+
+        const { userId, rawChunks, extractedSkills } = extractorOutput;
 
         console.log(`[Vectorizer] Starting for User: ${userId}. Chunks: ${rawChunks.length}`);
 
@@ -86,6 +97,10 @@ export const vectorizerWorker = new Worker<ExtractorOutput, VectorizerOutput>(
         connection: redis as unknown as ConnectionOptions,
         concurrency: 1,
         drainDelay: getWorkerDrainDelaySeconds() * 1000,
-        skipStalledCheck: true
+        // Stalled checks on: a dead worker's jobs retry per attempts.
+        // Locks auto-renew while the process is alive, so long healthy
+        // jobs are never falsely marked stalled.
+        maxStalledCount: 2,
+        stalledInterval: 30 * 1000
     }
 );

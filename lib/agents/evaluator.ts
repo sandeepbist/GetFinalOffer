@@ -37,6 +37,10 @@ async function evaluateCandidatesRaw(
 
     const evaluations = JSON.parse(completion.choices[0].message.content || "{}").evaluations || {};
 
+    // Annotate only: the cross-encoder already produced the final ordering,
+    // and a raw 0-100 LLM score with no position normalization must not
+    // re-sort it. aiReasoning is the recruiter-facing insight; the score is
+    // kept for display where one exists.
     return candidates.map(c => {
         const evalData = evaluations[c.id];
         if (evalData) {
@@ -47,7 +51,7 @@ async function evaluateCandidatesRaw(
             };
         }
         return c;
-    }).sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+    });
 }
 
 const breaker = createCircuitBreaker(evaluateCandidatesRaw, "evaluator-agent");
@@ -60,7 +64,7 @@ export class EvaluatorAgent {
         try {
             return await breaker.fire(query, candidates);
         } catch (err) {
-            console.warn("⚠️ Evaluator Agent Failed. Returning raw candidates.", err);
+            console.warn("Evaluator agent failed. Returning raw candidates.", err);
             return candidates;
         }
     }

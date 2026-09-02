@@ -147,7 +147,7 @@ export class StrategistAgent {
         try {
             return await breaker.fire(query);
         } catch (err) {
-            console.warn("⚠️ Strategist Agent Failed (Circuit Open or Error). Falling back to raw query.", err);
+            console.warn("Strategist agent failed (Circuit Open or Error). Falling back to raw query.", err);
             return {
                 originalQuery: query,
                 expandedKeywords: [query],

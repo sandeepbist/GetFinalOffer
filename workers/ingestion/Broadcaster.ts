@@ -7,6 +7,7 @@ import {
 import { eq } from "drizzle-orm";
 import { redis } from "@/lib/redis";
 import { queueGraphSync } from "@/lib/graph/sync";
+import { SemanticCache } from "@/lib/semantic-cache";
 import { normalizeSkill, toGraphSkillKey } from "@/lib/graph/normalize-skill";
 import { getWorkerDrainDelaySeconds } from "@/lib/worker-config";
 import { VectorizerOutput } from "./ingestion-dto";
@@ -36,8 +37,17 @@ async function syncShadowProfile(userId: string) {
 export const broadcasterWorker = new Worker<VectorizerOutput>(
     "ingestion-broadcaster",
     async (job: Job<VectorizerOutput>) => {
-        const { userId, vectors, rawChunks, extractedSkills } = job.data;
-        console.log(`[Broadcaster] ?? Going Live for User: ${userId}`);
+        // Flow root: waits on the vectorizer child; its completed output is
+        // the actual input here. Fall back to job.data for standalone adds.
+        const childValues = await job.getChildrenValues<VectorizerOutput>();
+        const childKeys = Object.keys(childValues);
+        const vectorizerOutput =
+            childKeys.length > 0
+                ? childValues[childKeys[0]]
+                : job.data;
+
+        const { userId, vectors, rawChunks, extractedSkills } = vectorizerOutput;
+        console.log(`[Broadcaster] User ${userId} going live in search.`);
 
         await db.transaction(async (tx) => {
             await tx.delete(gfoCandidateResumeChunksTable)
@@ -91,19 +101,29 @@ export const broadcasterWorker = new Worker<VectorizerOutput>(
         await pipeline.exec();
 
         await syncShadowProfile(userId);
+        // Fresh skills just replaced the old ones; drop every cached search
+        // payload containing this candidate so recruiters never see the
+        // previous resume's skill set for the rest of the cache TTL.
+        await SemanticCache.invalidateCandidate(userId).catch((err) =>
+            console.warn("Failed to invalidate search cache for candidate", userId, err)
+        );
         await queueGraphSync({
             userId,
             reason: "resume_ingestion",
             extractedSkills,
         });
 
-        console.log(`[Broadcaster] ? User ${userId} is now LIVE in Search.`);
+        console.log(`[Broadcaster] User ${userId} indexed.`);
         return { success: true };
     },
     {
         connection: redis as unknown as ConnectionOptions,
         concurrency: 1,
         drainDelay: getWorkerDrainDelaySeconds() * 1000,
-        skipStalledCheck: true
+        // Stalled checks on: a dead worker's jobs retry per attempts.
+        // Locks auto-renew while the process is alive, so long healthy
+        // jobs are never falsely marked stalled.
+        maxStalledCount: 2,
+        stalledInterval: 30 * 1000
     }
 );

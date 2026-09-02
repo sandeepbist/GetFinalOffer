@@ -143,6 +143,10 @@ export const extractorWorker = new Worker<IngestionJobPayload, ExtractorOutput>(
         connection: redis as unknown as ConnectionOptions,
         concurrency: 1,
         drainDelay: getWorkerDrainDelaySeconds() * 1000,
-        skipStalledCheck: true
+        // Stalled checks on: a dead worker's jobs retry per attempts.
+        // Locks auto-renew while the process is alive, so long healthy
+        // jobs are never falsely marked stalled.
+        maxStalledCount: 2,
+        stalledInterval: 30 * 1000
     }
 );

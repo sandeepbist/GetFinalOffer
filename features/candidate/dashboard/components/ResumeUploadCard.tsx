@@ -43,7 +43,7 @@ export const ResumeUploadCard: React.FC<ResumeUploadCardProps> = ({
     setUploading(true);
     try {
       await onUploaded(f);
-      toast.success("Resume uploaded successfully");
+      toast.success("Resume uploaded");
     } catch {
       toast.error("Upload failed");
       setFile(null);

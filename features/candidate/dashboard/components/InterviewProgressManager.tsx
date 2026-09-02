@@ -91,8 +91,8 @@ export const InterviewProgressManager: React.FC<
                 No interviews logged yet
               </p>
               <p className="text-xs text-text-muted mt-1 max-w-sm">
-                Add your past interview results to get verified and skip
-                technical rounds.
+                Add your past interview results so recruiters can see verified
+                progress on your profile.
               </p>
             </div>
           ) : (

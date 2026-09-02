@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
     return {
         name: 'GetFinalOffer',
         short_name: 'GetFinalOffer',
-        description: 'Skip interviews, get competing offers from top tech companies',
+        description: 'Verify your interview history once and let partner companies find you by verified skills',
         start_url: '/',
         display: 'standalone',
         background_color: '#ffffff',

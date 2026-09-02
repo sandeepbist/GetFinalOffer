@@ -296,12 +296,12 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
 
       if (ok) {
         setProfile(await getCandidateProfile());
-        toast.success("Verification request sent");
+        toast.success("Verification submitted for review");
       } else {
-        toast.error("Request failed");
+        toast.error("Failed to submit verification request");
       }
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err) || "Request failed");
+      toast.error(getErrorMessage(err) || "Failed to submit verification request");
     }
   };
 

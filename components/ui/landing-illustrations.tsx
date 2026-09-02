@@ -167,8 +167,8 @@ export const HeroIllustration = () => {
                                 animate={isInView ? { scale: 1 } : {}}
                                 transition={{ delay: 1.5, type: "spring" }}
                             />
-                            <div className="text-sm font-bold text-heading">Interview Skipped</div>
-                            <div className="text-xs text-text-muted mt-0.5">Bypassed technical screen</div>
+                            <div className="text-sm font-bold text-heading">Screen Waived</div>
+                            <div className="text-xs text-text-muted mt-0.5">Verified progress accepted</div>
                         </motion.div>
                     </div>
 
@@ -596,7 +596,7 @@ export const SpeedIllustration = () => {
                     animate={isInView ? { opacity: 1 } : {}}
                     transition={{ delay: 2 }}
                 >
-                    Skip interviews. Get offers instantly.
+                    Verified history. Fewer repeated screens.
                 </motion.div>
             </div>
         </div>

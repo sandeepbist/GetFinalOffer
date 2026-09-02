@@ -28,7 +28,12 @@ export const ExtractorOutputSchema = z.object({
     userId: z.string(),
     fullText: z.string(),
     extractedSkills: z.array(ExtractedSkillSchema),
+    // Raw resume text: what gets stored and shown in recruiter highlights.
     rawChunks: z.array(z.string()),
+    // Contextual variants used for embedding only: each chunk prefixed with
+    // the candidate's top skills so subject-less fragments embed with their
+    // domain. Not persisted anywhere.
+    embedChunks: z.array(z.string()),
 });
 export type ExtractorOutput = z.infer<typeof ExtractorOutputSchema>;
 
@@ -37,6 +42,7 @@ export const VectorizerOutputSchema = z.object({
     vectors: z.array(z.array(z.number())),
     chunkIds: z.array(z.string()),
     rawChunks: z.array(z.string()),
+    embedChunks: z.array(z.string()),
     extractedSkills: z.array(ExtractedSkillSchema),
 });
 export type VectorizerOutput = z.infer<typeof VectorizerOutputSchema>;

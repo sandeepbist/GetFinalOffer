@@ -29,7 +29,7 @@ export const vectorizerWorker = new Worker<ExtractorOutput, VectorizerOutput>(
                 ? childValues[childKeys[0]]
                 : job.data;
 
-        const { userId, rawChunks, extractedSkills } = extractorOutput;
+        const { userId, rawChunks, embedChunks, extractedSkills } = extractorOutput;
 
         console.log(`[Vectorizer] Starting for User: ${userId}. Chunks: ${rawChunks.length}`);
 
@@ -39,6 +39,7 @@ export const vectorizerWorker = new Worker<ExtractorOutput, VectorizerOutput>(
                 vectors: [],
                 chunkIds: [],
                 rawChunks: [],
+                embedChunks: [],
                 extractedSkills: []
             };
         }
@@ -51,6 +52,8 @@ export const vectorizerWorker = new Worker<ExtractorOutput, VectorizerOutput>(
             .from(gfoCandidateResumeChunksTable)
             .where(eq(gfoCandidateResumeChunksTable.candidateUserId, userId));
 
+        // Dedupe keys hash the raw text (stable across context-prefix
+        // changes); embeddings are generated from the contextual variants.
         const existingMap = new Map<string, number[]>();
         for (const row of existingRows) {
             if (row.embedding && row.content) {
@@ -63,19 +66,18 @@ export const vectorizerWorker = new Worker<ExtractorOutput, VectorizerOutput>(
         const textsToEmbed: string[] = [];
 
         for (let i = 0; i < rawChunks.length; i++) {
-            const text = rawChunks[i];
-            const hash = hashText(text);
+            const hash = hashText(rawChunks[i]);
 
             if (existingMap.has(hash)) {
                 finalEmbeddings[i] = existingMap.get(hash)!;
             } else {
                 indicesToEmbed.push(i);
-                textsToEmbed.push(text);
+                textsToEmbed.push(embedChunks[i] ?? rawChunks[i]);
             }
         }
 
         if (textsToEmbed.length > 0) {
-            console.log(`[Vectorizer] 💸 Generating ${textsToEmbed.length} new embeddings`);
+            console.log(`[Vectorizer] Generating ${textsToEmbed.length} new embeddings`);
             const newVectors = await generateEmbeddingsBatch(textsToEmbed);
             newVectors.forEach((vec, idx) => {
                 const originalIndex = indicesToEmbed[idx];
@@ -90,6 +92,7 @@ export const vectorizerWorker = new Worker<ExtractorOutput, VectorizerOutput>(
             vectors: finalEmbeddings,
             chunkIds,
             rawChunks,
+            embedChunks,
             extractedSkills
         };
     },

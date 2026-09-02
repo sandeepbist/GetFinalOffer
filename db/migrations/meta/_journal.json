@@ -71,6 +71,13 @@
       "when": 1788297899402,
       "tag": "20260901212459_black_apocalypse",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788367314585,
+      "tag": "20260902164154_smiling_spot",
+      "breakpoints": true
     }
   ]
 }

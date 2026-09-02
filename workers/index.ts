@@ -9,12 +9,14 @@ import { flushGraphMetricsProcessor } from "./graph-metrics-flush-worker";
 import { graphAlertProcessor } from "./graph-alert-worker";
 import { rankGraphProposalsProcessor } from "./graph-proposal-ranker";
 import { runAnalyticsWorker, stopAnalyticsWorker } from "./analytics-worker";
+import { runRetentionProcessor } from "./retention-worker";
 import { getWorkerDrainDelaySeconds } from "@/lib/worker-config";
 
 const SYNC_INTERVAL_MS = 10 * 60 * 1000;
 const GRAPH_METRIC_FLUSH_INTERVAL_MS = 60 * 1000;
 const GRAPH_ALERT_INTERVAL_MS = 5 * 60 * 1000;
 const GRAPH_PROPOSAL_RANK_INTERVAL_MS = 60 * 60 * 1000;
+const RETENTION_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const SHUTDOWN_TIMEOUT_MS = 30 * 1000;
 
 console.log(`[WorkerConfig] drainDelaySeconds=${getWorkerDrainDelaySeconds()}`);
@@ -78,16 +80,27 @@ async function runGraphProposalRanking() {
   }
 }
 
+async function runRetention() {
+  try {
+    await runRetentionProcessor();
+  } catch (err) {
+    console.error("[Retention] Run failed:", err);
+  }
+}
+
 runBatchSync();
 runGraphMetricFlush();
 runGraphAlerts();
 runGraphProposalRanking();
+runRetention();
 
 const timers: NodeJS.Timeout[] = [
   setInterval(runBatchSync, SYNC_INTERVAL_MS),
   setInterval(runGraphMetricFlush, GRAPH_METRIC_FLUSH_INTERVAL_MS),
   setInterval(runGraphAlerts, GRAPH_ALERT_INTERVAL_MS),
   setInterval(runGraphProposalRanking, GRAPH_PROPOSAL_RANK_INTERVAL_MS),
+  // Daily is plenty for a retention job; it also runs once at boot.
+  setInterval(runRetention, RETENTION_INTERVAL_MS),
 ];
 
 console.log("[Workers] All systems operational: pipeline + sync intervals");

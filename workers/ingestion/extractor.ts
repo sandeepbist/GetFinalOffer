@@ -118,13 +118,7 @@ export const extractorWorker = new Worker<IngestionJobPayload, ExtractorOutput>(
         let fullText = await extractTextFromPDF(buffer);
         fullText = `Bio: ${bio || ""}\n\n${fullText}`;
 
-        const [docs, rawSkills] = await Promise.all([
-            new RecursiveCharacterTextSplitter({
-                chunkSize: 500, chunkOverlap: 50
-            }).createDocuments([fullText]),
-
-            extractSkillsWithLLM(fullText)
-        ]);
+        const rawSkills = await extractSkillsWithLLM(fullText);
 
         const normalizedSkills: ExtractedSkill[] = [];
         for (const skill of rawSkills) {
@@ -132,11 +126,28 @@ export const extractorWorker = new Worker<IngestionJobPayload, ExtractorOutput>(
             normalizedSkills.push({ ...skill, name: canonicalName });
         }
 
+        // Contextual chunking: chunks are embedded with a compact subject
+        // header (top skills from the LLM extraction) so subject-less
+        // fragments ("Led migration of ...") embed with their domain.
+        // rawChunks keeps the bare text — it is what gets stored and shown
+        // in recruiter-facing highlights; only embedChunks carries the
+        // prefix, and it is never persisted.
+        const contextHeader = normalizedSkills
+            .slice(0, 5)
+            .map((s) => s.name)
+            .join(", ");
+        const prefix = contextHeader ? `[Context: ${contextHeader}]\n` : "";
+
+        const docs = await new RecursiveCharacterTextSplitter({
+            chunkSize: 500, chunkOverlap: 50
+        }).createDocuments([fullText]);
+
         return {
             userId,
             fullText,
             extractedSkills: normalizedSkills,
-            rawChunks: docs.map(d => d.pageContent),
+            rawChunks: docs.map((d) => d.pageContent),
+            embedChunks: docs.map((d) => `${prefix}${d.pageContent}`),
         };
     },
     {

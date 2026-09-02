@@ -19,12 +19,13 @@ interface InterviewProgressManagerProps {
   availableCompanies: { id: string; name: string }[];
   isLocked?: boolean;
   onSave: (entries: InterviewProgress[]) => Promise<boolean>;
+  onVerificationSubmitted?: () => Promise<void>;
 }
 const uuid = () => crypto.randomUUID();
 
 export const InterviewProgressManager: React.FC<
   InterviewProgressManagerProps
-> = ({ interviewProgress, availableCompanies, isLocked = false, onSave }) => {
+> = ({ interviewProgress, availableCompanies, isLocked = false, onSave, onVerificationSubmitted }) => {
   const [open, setOpen] = useState(false);
   const [edited, setEdited] = useState<InterviewProgress[]>([]);
   const [saving, setSaving] = useState(false);
@@ -133,6 +134,7 @@ export const InterviewProgressManager: React.FC<
                         interviewProgressId: String(e.id),
                       });
                       toast.success("Verification submitted for review");
+                      await onVerificationSubmitted?.();
                     }}
                   />
                 </motion.div>

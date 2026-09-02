@@ -102,6 +102,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
   const [partnerOrgs, setPartnerOrgs] = useState<PartnerOrganisationDTO[]>(cached?.o ?? []);
   const [hiddenOrgs, setHiddenOrgs] = useState<string[]>([]);
   const [invites, setInvites] = useState<CandidateInviteDTO[]>(cached?.i ?? []);
+  const [initFailed, setInitFailed] = useState(false);
   const didFetch = useRef(false);
 
   const getErrorMessage = (err: unknown) => {
@@ -125,6 +126,43 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
     });
   };
 
+  const initializeDashboard = async (background = false) => {
+    if (!background) setLoading(true);
+    try {
+      const [p, c, s, o, i] = await Promise.all([
+        getCandidateProfile(),
+        getAllCompanies(),
+        getAllSkills(),
+        getAllPartnerOrganisations(),
+        getCandidateInvites(),
+      ]);
+      dashboardCache.data = { p, c, s, o, i };
+      dashboardCache.ts = Date.now();
+      setProfile(p);
+      setCompanies(c);
+      setSkills(s);
+      setPartnerOrgs(o);
+      setInvites(i);
+      setInitFailed(false);
+      if (p) {
+        setFormVals({
+          professionalTitle: p.professionalTitle,
+          currentRole: p.currentRole,
+          yearsExperience: String(p.yearsExperience),
+          location: p.location,
+          about: p.bio,
+        });
+        setSelSkills(p.skillIds);
+        setHiddenOrgs(p.hiddenOrganisationIds ?? []);
+      }
+    } catch {
+      setInitFailed(true);
+      toast.error("Failed to initialize dashboard");
+    } finally {
+      if (!background) setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (error) {
       router.replace("/auth");
@@ -139,40 +177,7 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
         return;
       }
 
-      const background = !!dashboardCache.data;
-      if (!background) setLoading(true);
-
-      Promise.all([
-        getCandidateProfile(),
-        getAllCompanies(),
-        getAllSkills(),
-        getAllPartnerOrganisations(),
-        getCandidateInvites(),
-      ])
-        .then(([p, c, s, o, i]) => {
-          dashboardCache.data = { p, c, s, o, i };
-          dashboardCache.ts = Date.now();
-          setProfile(p);
-          setCompanies(c);
-          setSkills(s);
-          setPartnerOrgs(o);
-          setInvites(i);
-          if (p) {
-            setFormVals({
-              professionalTitle: p.professionalTitle,
-              currentRole: p.currentRole,
-              yearsExperience: String(p.yearsExperience),
-              location: p.location,
-              about: p.bio,
-            });
-            setSelSkills(p.skillIds);
-            setHiddenOrgs(p.hiddenOrganisationIds ?? []);
-          }
-        })
-        .catch(() => {
-          toast.error("Failed to initialize dashboard");
-        })
-        .finally(() => setLoading(false));
+      void initializeDashboard(!!dashboardCache.data);
     }
   }, [session, error, router]);
 
@@ -205,6 +210,26 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
 
   if (!session || loading) {
     return <DashboardSkeleton />;
+  }
+
+  if (initFailed && !profile) {
+    return (
+      <main className="flex min-h-[70vh] items-center justify-center px-6">
+        <Card className="max-w-md border-border/80 bg-surface">
+          <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+            <p className="text-sm font-medium text-heading">
+              Could not load your dashboard
+            </p>
+            <p className="text-xs text-text-muted">
+              The data failed to load. Check your connection and try again.
+            </p>
+            <Button className="mt-2" onClick={() => void initializeDashboard(false)}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </main>
+    );
   }
 
   const isProfileComplete = !!(
@@ -433,6 +458,12 @@ export default function CandidateDashboard({ user }: { user: TUserAuth }) {
             availableCompanies={companies}
             isLocked={!isProfileComplete}
             onSave={handleSaveProgress}
+            onVerificationSubmitted={async () => {
+              // Refresh so the entry's verification badge flips to pending
+              // without a manual reload.
+              const fresh = await getCandidateProfile();
+              if (fresh) setProfile(fresh);
+            }}
           />
         </motion.div>
       </motion.div>

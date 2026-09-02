@@ -38,20 +38,21 @@ const themeInitScript = `
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: "GetFinalOffer - Skip Interviews, Get Competing Offers",
+    default: "GetFinalOffer - Verified Interviews, Direct Recruiter Outreach",
     template: "%s | GetFinalOffer",
   },
   description:
-    "Verify your interview history once. Partner companies see validated outcomes and reach out with direct offers — no repeated technical screens.",
+    "Verify your interview history once. Partner companies search for you by verified skills and reach out — no repeated technical screens.",
   keywords: [
     "job offers",
     "tech hiring",
-    "skip interviews",
-    "salary negotiation",
+    "verified interviews",
+    "interview history",
+    "verified skills",
     "verified engineers",
     "software engineer jobs",
-    "direct offers",
-    "competing offers",
+    "recruiter search",
+    "direct outreach",
   ],
   authors: [{ name: "GetFinalOffer" }],
   creator: "GetFinalOffer",
@@ -62,9 +63,9 @@ export const metadata: Metadata = {
     telephone: false,
   },
   openGraph: {
-    title: "GetFinalOffer - Skip Interviews, Get Competing Offers",
+    title: "GetFinalOffer - Verified Interviews, Direct Recruiter Outreach",
     description:
-      "Verify once. Interview never. Get competing offers from top tech companies.",
+      "Verify your interview history once. Partner companies find you by verified skills and reach out directly.",
     url: baseUrl,
     siteName: "GetFinalOffer",
     locale: "en_US",
@@ -74,15 +75,15 @@ export const metadata: Metadata = {
         url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "GetFinalOffer - Skip Interviews, Get Competing Offers from Top Tech Companies",
+        alt: "GetFinalOffer - Verified interview history with direct recruiter outreach",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "GetFinalOffer - Skip Interviews, Get Competing Offers",
+    title: "GetFinalOffer - Verified Interviews, Direct Recruiter Outreach",
     description:
-      "Verify once. Interview never. Get competing offers from top tech companies.",
+      "Verify your interview history once. Partner companies find you by verified skills and reach out directly.",
     images: ["/opengraph-image.png"],
     creator: "@getfinaloffer",
   },

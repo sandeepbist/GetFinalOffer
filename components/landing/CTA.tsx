@@ -35,7 +35,7 @@ export function CTA() {
                     transition={{ duration: 0.5, delay: 0.15 }}
                     className="text-xl text-text-muted mb-12 max-w-xl mx-auto leading-relaxed"
                 >
-                    Stop leaving money on the table. Verify your skills and let companies make their best offers.
+                    Verify your interview history once and let recruiters come to you with the record in hand.
                 </motion.p>
 
                 <motion.div
@@ -45,7 +45,7 @@ export function CTA() {
                 >
                     <Link href="/auth">
                         <GradientButton size="lg" variant="primary">
-                            Get Started Free
+                            Get Started
                             <ArrowRight className="w-5 h-5" aria-hidden="true" />
                         </GradientButton>
                     </Link>

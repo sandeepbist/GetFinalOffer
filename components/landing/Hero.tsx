@@ -33,7 +33,7 @@ export function Hero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             >
-              Stop Interviewing.
+              Stop Repeating.
             </motion.span>
             <motion.span
               className="block mt-2 text-gradient-blue"
@@ -41,7 +41,7 @@ export function Hero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
             >
-              Start Negotiating.
+              Start Getting Found.
             </motion.span>
           </h1>
 
@@ -51,7 +51,7 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="text-xl text-text-muted mb-12 leading-relaxed max-w-lg"
           >
-            Verify your interview history once, then let top companies compete for you with direct compensation offers.
+            Verify your interview history once. Partner companies search for you by verified skills — and you choose who can see your profile.
           </motion.p>
 
           <motion.div

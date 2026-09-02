@@ -101,7 +101,7 @@ export function Footer() {
 
         <div className="flex flex-col gap-2 border-t border-border/60 pt-5 text-xs text-text-subtle sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} GetFinalOffer. All rights reserved.</p>
-          <p>Built for quiet confidence in career decisions.</p>
+          <p>Verified interview history, fewer repeated screens.</p>
         </div>
       </div>
     </footer>

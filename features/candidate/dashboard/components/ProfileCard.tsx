@@ -203,7 +203,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Complete your profile info to unlock</p>
+                    <p>Add your title and location to upload a resume</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

@@ -14,17 +14,17 @@ const steps = [
     {
         icon: Search,
         title: "Get Discovered",
-        description: "Top companies find you based on verified skills and experience, not keyword-stuffed resumes.",
+        description: "Partner companies find you based on verified skills and experience, not keyword-stuffed resumes.",
     },
     {
         icon: TrendingUp,
-        title: "Receive Offers",
-        description: "Companies compete for you with direct compensation offers. No recruiter middlemen.",
+        title: "Receive Invites",
+        description: "Recruiters from partner companies reach out directly, with your verified interview progress in front of them.",
     },
     {
         icon: FileCheck,
-        title: "Negotiate & Accept",
-        description: "Compare offers side by side with full transparency. Accept the best one on your terms.",
+        title: "Accept on Your Terms",
+        description: "Review each invitation and company with your interview history in hand, and accept the ones that fit.",
     },
 ];
 
@@ -101,8 +101,8 @@ export function HowItWorks() {
             <div className="max-w-3xl mx-auto">
                 <SectionHeader
                     badge="How it Works"
-                    title="Four Steps to Your Best Offer"
-                    subtitle="A streamlined process that puts engineers in control of their career trajectory."
+                    title="Four Steps to Your Next Offer"
+                    subtitle="Engineers control what is verified, who can see it, and which companies to hear from."
                 />
 
                 <div className="mt-16">

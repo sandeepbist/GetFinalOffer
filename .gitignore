@@ -4,6 +4,8 @@
 /scripts/*
 !/scripts/graph/
 !/scripts/graph/**
+!/scripts/e2e/
+!/scripts/e2e/**
 
 # dependencies
 /node_modules

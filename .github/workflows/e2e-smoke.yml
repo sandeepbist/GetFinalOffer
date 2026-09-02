@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   smoke:
-    name: Playwright Smoke
+    name: Playwright (public pages)
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -48,7 +48,86 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-artifacts
+          name: playwright-artifacts-smoke
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+  full:
+    name: Playwright (authed flows, real services)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: getoffer_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      CI: true
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/getoffer_e2e
+      REDIS_URL: redis://localhost:6379
+      # Better-auth needs a secret and URL even in tests.
+      BETTER_AUTH_SECRET: e2e-test-secret-not-for-production
+      BETTER_AUTH_URL: http://localhost:3000
+      # Graph and caches degrade gracefully when unconfigured.
+      GRAPH_SEARCH_MODE: "off"
+      OPENAI_API_KEY: stub-not-used-graph-off
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Apply migrations and seed fixture users
+        run: pnpm e2e:seed
+
+      - name: Run full Playwright suite
+        run: pnpm test
+
+      - name: Upload Playwright artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts-full
           path: |
             playwright-report/
             test-results/

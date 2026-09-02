@@ -2,8 +2,10 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  // Falls back to an inert stub when neither Upstash var is present (e.g.
+  // CI or local runs); limitOrPassThrough below then allows all traffic.
+  url: process.env.UPSTASH_REDIS_REST_URL || "http://localhost:0",
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || "stub",
 });
 
 export const searchLimiter = new Ratelimit({

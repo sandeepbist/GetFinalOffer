@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq, and, desc } from "drizzle-orm";
 import db from "@/db";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { notifyCandidateInvite } from "@/lib/email";
+import { gfoUserTable } from "@/features/auth/auth-schemas";
 import {
   gfoContactsTable,
   gfoContactDetailsTable,
   gfoRecruitersTable,
+  gfoPartnerOrganisationsTable,
 } from "@/features/recruiter/recruiter-schemas";
 import {
   gfoCandidatesTable,
@@ -30,8 +33,15 @@ export async function POST(req: NextRequest) {
   // The role string alone is not authority: a real recruiter row for this
   // user is required (it carries the organisation the stealth check uses).
   const [recruiter] = await db
-    .select({ organisationId: gfoRecruitersTable.organisationId })
+    .select({
+      organisationId: gfoRecruitersTable.organisationId,
+      organisationName: gfoPartnerOrganisationsTable.name,
+    })
     .from(gfoRecruitersTable)
+    .leftJoin(
+      gfoPartnerOrganisationsTable,
+      eq(gfoPartnerOrganisationsTable.id, gfoRecruitersTable.organisationId)
+    )
     .where(eq(gfoRecruitersTable.userId, user.id));
 
   if (!recruiter) {
@@ -107,6 +117,28 @@ export async function POST(req: NextRequest) {
       status: "pending",
     });
   });
+
+  // Notify after commit; email failures never fail the invite.
+  try {
+    const [candidateUser] = await db
+      .select({
+        email: gfoUserTable.email,
+        name: gfoUserTable.name,
+      })
+      .from(gfoUserTable)
+      .where(eq(gfoUserTable.id, candidateUserId));
+
+    if (candidateUser?.email) {
+      await notifyCandidateInvite({
+        candidateEmail: candidateUser.email,
+        candidateName: candidateUser.name,
+        recruiterName: user.name,
+        organisationName: recruiter.organisationName ?? null,
+      });
+    }
+  } catch {
+    // Notification is best-effort by design.
+  }
 
   return NextResponse.json({ success: true, alreadyInvited: false }, { status: 200 });
 }

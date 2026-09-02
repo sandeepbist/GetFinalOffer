@@ -13,6 +13,7 @@ import {
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { isAdminEmail } from "@/lib/auth/admin";
 import { getVerificationSignedUrl } from "@/lib/verification-storage";
+import { notifyVerificationDecision } from "@/lib/email";
 import { ApiErrors, successResponse } from "@/features/common/api/response";
 import { zodFieldErrors } from "@/features/common/api/validation";
 
@@ -131,6 +132,17 @@ export async function POST(req: NextRequest) {
       return ApiErrors.badRequest(`Request was already ${request.status}`);
     }
 
+    // Requester identity for the decision email.
+    const [requester] = await db
+      .select({
+        email: gfoUserTable.email,
+        name: gfoUserTable.name,
+      })
+      .from(gfoUserTable)
+      .where(eq(gfoUserTable.id, request.requestedByUserId));
+    const requesterEmail = requester?.email ?? "";
+    const requesterName = requester?.name ?? null;
+
     await db.transaction(async (tx) => {
       await tx
         .update(gfoVerificationRequestsTable)
@@ -189,6 +201,16 @@ export async function POST(req: NextRequest) {
           .where(eq(gfoCandidateInterviewProgressTable.id, request.targetId));
       }
     });
+
+    // Notify after commit: the decision is durable, and email must never
+    // roll it back. Failures inside sendEmail are swallowed.
+    await notifyVerificationDecision({
+      recipientEmail: requesterEmail,
+      recipientName: requesterName,
+      scope: request.scope,
+      approved: decision === "approved",
+      note: decisionNote || null,
+    }).catch(() => undefined);
 
     return successResponse(undefined, `Request ${decision}`);
   } catch (err) {
